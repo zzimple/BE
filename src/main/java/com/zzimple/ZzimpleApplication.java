@@ -8,7 +8,7 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableRedisRepositories(basePackages = {
-		"com.zzimple.owner.repository.redis" // Redis 전용 Repository가 위치한 패키지
+		"com.zzimple.owner.repository.redis"
 })
 public class ZzimpleApplication {
 
