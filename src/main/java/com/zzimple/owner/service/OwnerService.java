@@ -87,14 +87,14 @@ public class OwnerService {
           .build();
       ownerRepository.save(owner);
 
-      log.info("[POST /api/admin/register] 회원가입 성공 - 사업자번호: {}, 이름: {}", base.getLoginId(),
+      log.info("[회원가입] 회원가입 성공 - 사업자번호: {}, 이름: {}", base.getLoginId(),
           base.getUserName());
 
       return OwnerSignUpResponse.builder()
           .isSuccess(true)
           .build();
     } catch (Exception e) {
-      log.error("[POST /api/admin/register] 회원가입 처리 중 예외 발생 - ID: {}", request.getB_no(), e);
+      log.error("[회원가입] 회원가입 처리 중 예외 발생 - ID: {}", request.getB_no(), e);
       throw new CustomException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
     }
   }
