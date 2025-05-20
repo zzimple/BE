@@ -48,7 +48,6 @@ public class EstimateDraftService {
 
       return AddressDraftResponse.builder()
           .roadAddr(request.getFromAddress().getRoadAddr())
-          .message("도로명 주소 임시 저장이 완료되었습니다.")
           .build();
     } catch (JsonProcessingException e) {
       log.warn("[AddressDraft] JSON 직렬화 실패 - userId: {}, 이유: {}", userId, e.getMessage());

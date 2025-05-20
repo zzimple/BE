@@ -14,7 +14,4 @@ public class AddressDraftResponse {
   @Schema(description = "도로명 주소", example = "서울특별시 강남구 테헤란로 223")
   private String roadAddr;
 
-  @Schema(description = "응답 메세지", example = "도로명 주소 임시 저장이 완료되었습니다.")
-  private String message;
-
 }
