@@ -1,11 +1,11 @@
 package com.zzimple.owner.controller;
 
 import com.zzimple.global.common.response.ApiResponse;
+import com.zzimple.owner.dto.request.OwnerLoginIdCheckRequest;
 import com.zzimple.owner.dto.request.OwnerSignUpRequest;
 import com.zzimple.owner.dto.response.OwnerLoginIdCheckResponse;
 import com.zzimple.owner.dto.response.OwnerSignUpResponse;
 import com.zzimple.owner.service.OwnerService;
-import com.zzimple.user.dto.request.UserLoginIdCheckRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +34,7 @@ public class OwnerController {
               message: 결과 메시지  \n
               """)
   @PostMapping("/login-id-duplicate-check")
-  public ResponseEntity<ApiResponse<OwnerLoginIdCheckResponse>> checkLoginIdDuplicate(@RequestBody UserLoginIdCheckRequest request) {
+  public ResponseEntity<ApiResponse<OwnerLoginIdCheckResponse>> checkLoginIdDuplicate(@RequestBody OwnerLoginIdCheckRequest request) {
 
     OwnerLoginIdCheckResponse result = ownerService.checkLoginIdDuplicate(request);
     String message = result.isDuplicate() ? "이미 사용 중인 아이디입니다." : "사용 가능한 아이디입니다.";
