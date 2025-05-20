@@ -6,5 +6,5 @@ import lombok.Getter;
 public enum Status {
   PENDING,
   APPROVED,
-  REJECTED;
+  REJECTED
 }
