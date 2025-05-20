@@ -1,0 +1,101 @@
+package com.zzimple.owner.service;
+
+import com.zzimple.global.exception.BusinessErrorCode;
+import com.zzimple.global.exception.CustomException;
+import com.zzimple.global.exception.GlobalErrorCode;
+import com.zzimple.global.sms.service.SmsService;
+import com.zzimple.global.sms.service.util.SmsCertificationUtil;
+import com.zzimple.owner.dto.request.OwnerLoginIdCheckRequest;
+import com.zzimple.owner.dto.request.OwnerSignUpRequest;
+import com.zzimple.owner.dto.response.OwnerLoginIdCheckResponse;
+import com.zzimple.owner.dto.response.OwnerSignUpResponse;
+import com.zzimple.owner.entity.Owner;
+import com.zzimple.owner.repository.redis.BusinessRedisRepository;
+import com.zzimple.owner.repository.OwnerRepository;
+import com.zzimple.user.entity.User;
+import com.zzimple.user.enums.UserRole;
+import com.zzimple.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class OwnerService {
+
+  private final OwnerRepository ownerRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final UserRepository userRepository;
+  private final BusinessRedisRepository businessRedisRepository;
+  private final SmsCertificationUtil smsCertificationUtil;
+
+  private final RedisTemplate<String, String> redisTemplate;
+  private final SmsService smsService;
+
+  public OwnerLoginIdCheckResponse checkLoginIdDuplicate(OwnerLoginIdCheckRequest request) {
+    // 로그인 아이디(이메일) 존재 여부 확인
+    boolean isDuplicate = ownerRepository.findByBusinessNumber(request.getLoginId()).isPresent();
+
+    // 응답 생성
+    return OwnerLoginIdCheckResponse.builder()
+        .isDuplicate(isDuplicate)
+        .build();
+  }
+
+  @Transactional
+  public OwnerSignUpResponse registerOwner(OwnerSignUpRequest request) {
+
+    // 0. 휴대폰 인증 검사
+    smsService.verifyPhoneCertified(request.getPhoneNumber());
+
+    // 1. 중복 아이디
+    if (ownerRepository.findByBusinessNumber(request.getB_no()).isPresent()) {
+      log.warn("[회원가입 실패] 이미 존재하는 아이디 - ID: {}", request.getB_no());
+      throw new CustomException(BusinessErrorCode.BUSINESS_NUMBER_ALREADY_EXISTS);
+    }
+
+    // 2. 인증된 사업자 번호 Redis에서 삭제
+    businessRedisRepository.deleteById(request.getB_no());
+    log.info("[회원가입] 사업자번호 인증정보 삭제 완료 - b_no: {}", request.getB_no());
+
+    try {
+      // 2. 비밀번호 암호화
+      String encodedPassword = passwordEncoder.encode(request.getPassword());
+
+      // 3) User 엔티티 생성 (role=OWNER 로 고정)
+      User base = User.builder()
+          .loginId(request.getB_no())
+          .password(encodedPassword)
+          .userName(request.getUserName())
+          .phoneNumber(request.getPhoneNumber())
+          .email(request.getEmail())
+          .role(UserRole.OWNER)
+          .build();
+      userRepository.save(base);
+
+      // 3. Owner 저장
+      Owner owner = Owner.builder()
+          .userId(base.getId())
+          .businessNumber(request.getB_no())
+          .insured(request.getInsured())
+          .status("계속사업자")
+          .build();
+      ownerRepository.save(owner);
+
+      log.info("[POST /api/admin/register] 회원가입 성공 - 사업자번호: {}, 이름: {}", base.getLoginId(),
+          base.getUserName());
+
+      return OwnerSignUpResponse.builder()
+          .isSuccess(true)
+          .build();
+    } catch (Exception e) {
+      log.error("[POST /api/admin/register] 회원가입 처리 중 예외 발생 - ID: {}", request.getB_no(), e);
+      throw new CustomException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
+    }
+  }
+}
