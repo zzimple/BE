@@ -1,6 +1,6 @@
 package com.zzimple.user.controller;
 
-import com.zzimple.global.common.response.ApiResponse;
+import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.user.dto.request.UserLoginIdCheckRequest;
 import com.zzimple.user.dto.request.LoginRequest;
 import com.zzimple.user.dto.request.UserSignUpRequest;
@@ -37,12 +37,12 @@ public class UserController {
            message: 결과 메시지  \n
            """)
   @PostMapping("/login-id-duplicate-check")
-  public ResponseEntity<ApiResponse<LoginIdCheckResponse>> checkLoginIdDuplicate(@RequestBody @Valid UserLoginIdCheckRequest request) {
+  public ResponseEntity<BaseResponse<LoginIdCheckResponse>> checkLoginIdDuplicate(@RequestBody @Valid UserLoginIdCheckRequest request) {
 
     LoginIdCheckResponse result = userService.checkLoginIdDuplicate(request);
     String message = result.isDuplicate() ? "이미 사용 중인 아이디입니다." : "사용 가능한 아이디입니다.";
 
-    return ResponseEntity.ok(ApiResponse.success(message, result));
+    return ResponseEntity.ok(BaseResponse.success(message, result));
   }
 
   @Operation(
@@ -61,9 +61,9 @@ public class UserController {
            isSuccess: 회원가입 성공 여부  \n
            """)
   @PostMapping("/register")
-  public ResponseEntity<ApiResponse<SignUpResponse>> register(@RequestBody @Valid UserSignUpRequest request) {
+  public ResponseEntity<BaseResponse<SignUpResponse>> register(@RequestBody @Valid UserSignUpRequest request) {
     SignUpResponse result = userService.registerUser(request);
-    return ResponseEntity.ok(ApiResponse.success("회원가입이 완료되었습니다.", result));
+    return ResponseEntity.ok(BaseResponse.success("회원가입이 완료되었습니다.", result));
   }
 
   @Operation(
@@ -81,8 +81,8 @@ public class UserController {
           isSuccess: 로그인 성공 여부  \n
           """)
   @PostMapping("/login")
-  public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest loginRequest) {
+  public ResponseEntity<BaseResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest loginRequest) {
     LoginResponse result = userService.login(loginRequest);
-    return ResponseEntity.ok(ApiResponse.success("로그인에 성공하였습니다.", result));
+    return ResponseEntity.ok(BaseResponse.success("로그인에 성공하였습니다.", result));
   }
 }

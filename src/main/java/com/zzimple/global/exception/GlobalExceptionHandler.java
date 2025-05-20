@@ -1,6 +1,6 @@
 package com.zzimple.global.exception;
 
-import com.zzimple.global.common.response.ApiResponse;
+import com.zzimple.global.dto.BaseResponse;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -16,11 +16,11 @@ public class GlobalExceptionHandler {
 
   // 커스텀 예외
   @ExceptionHandler(CustomException.class)
-  public ResponseEntity<ApiResponse<Object>> handleCustomException(CustomException ex) {
+  public ResponseEntity<BaseResponse<Object>> handleCustomException(CustomException ex) {
     log.error("Custom 오류 발생: {}", ex.getMessage());
     return ResponseEntity
         .status(ex.getErrorCode().getStatus())
-        .body(ApiResponse.failure(
+        .body(BaseResponse.failure(
             ex.getErrorCode().getCode(),       // 예: "E001"
             ex.getErrorCode().getMessage()     // 예: "임시 주소 저장 실패"
         ));
@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
 
   // Validation 실패
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ApiResponse<Object>> handleValidationException(
+  public ResponseEntity<BaseResponse<Object>> handleValidationException(
       MethodArgumentNotValidException ex) {
     String errorMessages =
         ex.getBindingResult().getFieldErrors().stream()
@@ -39,17 +39,17 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity
         .badRequest()
-        .body(ApiResponse.failure("VALIDATION_ERROR", errorMessages));
+        .body(BaseResponse.failure("VALIDATION_ERROR", errorMessages));
   }
 
   // 예상치 못한 예외
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ApiResponse<Object>>  handleException(Exception ex) {
+  public ResponseEntity<BaseResponse<Object>>  handleException(Exception ex) {
     log.error("Server 오류 발생: ", ex);
 
     return ResponseEntity
         .status(GlobalErrorCode.INTERNAL_SERVER_ERROR.getStatus())
-        .body(ApiResponse.failure(
+        .body(BaseResponse.failure(
             GlobalErrorCode.INTERNAL_SERVER_ERROR.getCode(),
             GlobalErrorCode.INTERNAL_SERVER_ERROR.getMessage()
         ));

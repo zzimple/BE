@@ -1,6 +1,6 @@
 package com.zzimple.owner.controller;
 
-import com.zzimple.global.common.response.ApiResponse;
+import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.exception.BusinessErrorCode;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.owner.dto.request.BusinessStatusRequest;
@@ -35,7 +35,7 @@ public class BusinessStatusController {
            Y/N
            """)
   @PostMapping("/verify")
-  public ResponseEntity<ApiResponse<BusinessStatusCheckResponse>> verifyBusiness(@RequestBody BusinessStatusRequest request) {
+  public ResponseEntity<BaseResponse<BusinessStatusCheckResponse>> verifyBusiness(@RequestBody BusinessStatusRequest request) {
 
     if (request.getB_no() == null || request.getB_no().isEmpty()) {
       throw new CustomException(BusinessErrorCode.BUSINESS_NUMBER_MISSING);
@@ -50,6 +50,6 @@ public class BusinessStatusController {
           .set(redisKey, "Y", Duration.ofMinutes(5));
     }
 
-    return ResponseEntity.ok(ApiResponse.success("사업자 상태 조회 결과", result));
+    return ResponseEntity.ok(BaseResponse.success("사업자 상태 조회 결과", result));
   }
 }

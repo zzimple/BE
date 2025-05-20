@@ -1,6 +1,6 @@
 package com.zzimple.owner.controller;
 
-import com.zzimple.global.common.response.ApiResponse;
+import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.owner.dto.request.OwnerLoginIdCheckRequest;
 import com.zzimple.owner.dto.request.OwnerSignUpRequest;
 import com.zzimple.owner.dto.response.OwnerLoginIdCheckResponse;
@@ -34,12 +34,12 @@ public class OwnerController {
               message: 결과 메시지  \n
               """)
   @PostMapping("/login-id-duplicate-check")
-  public ResponseEntity<ApiResponse<OwnerLoginIdCheckResponse>> checkLoginIdDuplicate(@RequestBody OwnerLoginIdCheckRequest request) {
+  public ResponseEntity<BaseResponse<OwnerLoginIdCheckResponse>> checkLoginIdDuplicate(@RequestBody OwnerLoginIdCheckRequest request) {
 
     OwnerLoginIdCheckResponse result = ownerService.checkLoginIdDuplicate(request);
     String message = result.isDuplicate() ? "이미 사용 중인 아이디입니다." : "사용 가능한 아이디입니다.";
 
-    return ResponseEntity.ok(ApiResponse.success(message, result));
+    return ResponseEntity.ok(BaseResponse.success(message, result));
   }
 
   @Operation(
@@ -59,9 +59,9 @@ public class OwnerController {
               isSuccess: 회원가입 성공 여부  \n
               """)
   @PostMapping("/register")
-  public ResponseEntity<ApiResponse<OwnerSignUpResponse>> register(
+  public ResponseEntity<BaseResponse<OwnerSignUpResponse>> register(
       @RequestBody OwnerSignUpRequest request) {
     OwnerSignUpResponse result = ownerService.registerOwner(request);
-    return ResponseEntity.ok(ApiResponse.success("회원가입이 완료되었습니다.", result));
+    return ResponseEntity.ok(BaseResponse.success("회원가입이 완료되었습니다.", result));
   }
 }

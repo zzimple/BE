@@ -1,6 +1,6 @@
 package com.zzimple.global.sms.controller;
 
-import com.zzimple.global.common.response.ApiResponse;
+import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.sms.dto.request.SignupCodeRequest;
 import com.zzimple.global.sms.dto.request.VerifySignupCodeRequest;
 import com.zzimple.global.sms.dto.response.SmsResponse;
@@ -42,9 +42,9 @@ public class SmsController {
               ┗ trNo: 메시지 전송 고유 번호
            """)
   @PostMapping("/signup-code")
-  public ApiResponse<SmsResponse> sendSignupCode(@RequestBody @Valid SignupCodeRequest request) {
+  public BaseResponse<SmsResponse> sendSignupCode(@RequestBody @Valid SignupCodeRequest request) {
     SmsResponse response = smsService.sendSignupCode(request.getMsgTo());
-    return ApiResponse.success("인증번호가 전송되었습니다.", response);
+    return BaseResponse.success("인증번호가 전송되었습니다.", response);
   }
 
   @Operation(
@@ -60,9 +60,9 @@ public class SmsController {
               message: 메세지  \n
               """)
   @PostMapping("/signup-code/verify")
-  public ApiResponse<Void> verifySignupCode(
+  public BaseResponse<Void> verifySignupCode(
       @RequestBody @Valid VerifySignupCodeRequest request) {
     smsService.verifySignupCode(request.getPhone(), request.getCode());
-    return ApiResponse.success("인증번호가 확인되었습니다.", null);
+    return BaseResponse.success("인증번호가 확인되었습니다.", null);
   }
 }
