@@ -5,6 +5,7 @@ import com.zzimple.estimate.dto.response.AddressDraftResponse;
 import com.zzimple.estimate.dto.response.HolidayCheckResponse;
 import com.zzimple.estimate.service.EstimateDraftService;
 import com.zzimple.estimate.service.HolidayService;
+import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -50,12 +51,11 @@ public class EstimateDraftController {
            message: 임시 저장 성공 여부  \n
            """)
   @PostMapping("/address")
-  public ResponseEntity<AddressDraftResponse> saveAddress(@AuthenticationPrincipal CustomUserDetails user, @RequestBody AddressDraftSaveRequest request) {
+  public ResponseEntity<BaseResponse<AddressDraftResponse>> saveAddress(@AuthenticationPrincipal CustomUserDetails user, @RequestBody AddressDraftSaveRequest request) {
     Long userId = user.getUserId();
     AddressDraftResponse response = estimateDraftService.saveAddressDraft(userId, request);
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(BaseResponse.success(response));
   }
-
 
   @Operation(
       summary = "[ 고객 | 토큰 O | 견적서 - 공휴일 여부 확인 및 저장 ]",
@@ -70,7 +70,8 @@ public class EstimateDraftController {
           """
   )
   @GetMapping("/holiday/check")
-  public HolidayCheckResponse checkHoliday(@RequestParam String date) {
-    return holidayService.checkHoliday(date);
+  public ResponseEntity<BaseResponse<HolidayCheckResponse>> checkHoliday(@RequestParam String date) {
+    HolidayCheckResponse result = holidayService.checkHoliday(date);
+    return ResponseEntity.ok(BaseResponse.success(result));
   }
 }
