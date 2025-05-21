@@ -13,7 +13,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "단일 짐 항목 응답 DTO")
+@Schema(description = "단일 짐 항목 응답")
 public class MoveItemsDraftResponse {
 
   @Schema(description = "현재 저장된 짐 항목 리스트")

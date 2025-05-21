@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-@Schema(description = "출발지/도착지 - 묶음 Response")
+@Schema(description = "출발지/도착지 - 묶음 응답")
 public class HolidayCheckResponse {
 
   @Schema(description = "공휴일 여부", example = "Y")
