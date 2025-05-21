@@ -112,4 +112,23 @@ public class HolidayService {
 
     return new HolidayCheckResponse(isHoliday, dateName);
   }
+
+  // 불러오기
+  public HolidayCheckResponse getHolidayInfo(UUID draftId, String date) {
+    String redisKey = RedisKeyUtil.draftHolidayKey(draftId, date);
+    String cached = redisTemplate.opsForValue().get(redisKey);
+
+    log.info("[HolidayService] 공휴일 정보 불러오기 - 키={}, 값={}", redisKey, cached);
+
+    if (cached == null) {
+      throw new CustomException(HolidayErrorCode.HOLIDAY_DRAFT_NOT_FOUND);
+    }
+
+    String[] parts = cached.split(":", 2);
+    String isHoliday = parts[0];
+    String dateName = parts.length > 1 ? parts[1] : null;
+
+    return new HolidayCheckResponse(isHoliday, dateName);
+  }
+
 }
