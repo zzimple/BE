@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "출발지/도착지 - 묶음 Request")
+@Schema(description = "출발지/도착지 - 묶음 요청")
 public class AddressDraftSaveRequest {
   @Schema(description = "현 집 주소 + 상세 정보")
   private AddressWithDetailRequest fromAddress;

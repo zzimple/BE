@@ -12,7 +12,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "단일 짐 항목 정보")
+@Schema(description = "단일 짐 항목 정보 요청")
 public class MoveItemsDraftRequest {
 
   @Schema(description = "짐 종류 ID", example = "1001")

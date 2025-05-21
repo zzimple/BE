@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Schema(description = "출발지/도착지 - 단일 Request")
+@Schema(description = "출발지/도착지 - 단일 요청")
 public class AddressDraftRequest {
   @Schema(description = "전체 도로명 주소", example = "서울특별시 강남구 테헤란로 223, 20층 (역삼동)")
   private String roadFullAddr;

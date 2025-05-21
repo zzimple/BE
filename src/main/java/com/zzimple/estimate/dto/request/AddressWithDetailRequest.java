@@ -8,6 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@Schema(description = "주소 + 건물 상세 정보 요청")
 public class AddressWithDetailRequest {
   @Schema(description = "기본 주소")
   private AddressDraftRequest address;
