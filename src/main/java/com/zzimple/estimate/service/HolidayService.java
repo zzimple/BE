@@ -3,6 +3,7 @@ package com.zzimple.estimate.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zzimple.estimate.dto.response.HolidayCheckResponse;
+import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.HolidayErrorCode;
 import java.util.UUID;
@@ -35,13 +36,11 @@ public class HolidayService {
   // JSON 파싱을 위한 ObjectMapper
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  private static final String REDIS_KEY_PREFIX = "estimate:draft:holiday:";
-
   private static final Duration TTL = Duration.ofMinutes(1);  // 개발용이라 1분이라고 정함.
 
 
   public HolidayCheckResponse checkHoliday(UUID draftId, String date) {
-    String redisKey = REDIS_KEY_PREFIX + date;
+    String redisKey = RedisKeyUtil.draftHolidayKey(draftId, date);
 
     // 저장된 캐시 확인
     String cached = redisTemplate.opsForValue().get(redisKey);
