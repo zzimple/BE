@@ -17,7 +17,7 @@ import java.time.Duration;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class EstimateDraftService {
+public class AddressService {
 
   private final StringRedisTemplate redisTemplate;
 
