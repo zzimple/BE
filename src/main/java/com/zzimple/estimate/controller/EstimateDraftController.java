@@ -1,6 +1,6 @@
 package com.zzimple.estimate.controller;
 
-import com.zzimple.estimate.dto.request.AddressDraftSaveRequestDto;
+import com.zzimple.estimate.dto.request.AddressDraftSaveRequest;
 import com.zzimple.estimate.dto.request.MoveItemsDraftRequest;
 import com.zzimple.estimate.dto.response.AddressDraftResponse;
 import com.zzimple.estimate.dto.response.HolidayCheckResponse;
@@ -11,7 +11,6 @@ import com.zzimple.estimate.service.MoveItemsService;
 import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -72,10 +71,12 @@ public class EstimateDraftController {
            message: 임시 저장 성공 여부  \n
            """)
   @PostMapping("/address")
-  public ResponseEntity<BaseResponse<AddressDraftResponse>> saveAddress(@AuthenticationPrincipal CustomUserDetails user, @RequestBody AddressDraftSaveRequestDto request) {
-    Long userId = user.getUserId();
-    AddressDraftResponse response = addressService.saveAddressDraft(userId, request);
-    return ResponseEntity.ok(BaseResponse.success("주소가 저장 되었습니다.",response));
+  public ResponseEntity<BaseResponse<AddressDraftResponse>> saveAddress(
+      @RequestParam UUID draftId,
+      @RequestBody AddressDraftSaveRequest request
+  ) {
+    AddressDraftResponse response = addressService.saveAddressDraft(draftId, request);
+    return ResponseEntity.ok(BaseResponse.success("주소가 저장 되었습니다.", response));
   }
 
   @Operation(
