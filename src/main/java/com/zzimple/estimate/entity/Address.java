@@ -28,6 +28,15 @@ public class Address {
   @Column(name = "buld_mgt_no2", nullable = false)
   private String buldMgtNo2;  // 건물관리번호 뒷자리 (5자리, 예: 1446)
 
+  @Column(name = "buld_slno") // 건물 부번 (건물번호 뒷자리)
+  private Number buldSlno;
+
+  @Column(name = "emd_nm") // 읍면동명
+  private String emdNm;
+
+  @Column(name = "li_nm") // 법정리명
+  private String liNm;
+
   // 그냥 값 보관용 객체라서 생성자 씀.
   public Address(String roadFullAddr, String roadAddr, String zipNo, String addrDetail, String buldMgtNo1, String buldMgtNo2) {
     this.roadFullAddr = roadFullAddr;
