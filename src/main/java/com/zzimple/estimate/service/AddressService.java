@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zzimple.estimate.dto.request.AddressDraftSaveRequest;
 import com.zzimple.estimate.dto.request.AddressWithDetailRequest;
 import com.zzimple.estimate.dto.response.AddressDraftResponse;
+import com.zzimple.estimate.dto.response.AddressFullResponse;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.AddressErrorCode;
 import com.zzimple.global.exception.CustomException;
@@ -49,7 +50,6 @@ public class AddressService {
 
       return AddressDraftResponse.builder()
           .roadAddr(from.getAddress().getRoadAddr())
-          .draftId(draftId.toString())
           .build();
     } catch (JsonProcessingException e) {
       log.warn("[AddressDraft] JSON 직렬화 실패 - userId: {}, 이유: {}", draftId, e.getMessage());
@@ -62,4 +62,28 @@ public class AddressService {
       AddressWithDetailRequest fromAddress,
       AddressWithDetailRequest toAddress
   ) {}
+
+// 전체 불러오기 (조회용)
+  public AddressFullResponse getAddressDraft(UUID draftId) {
+    String redisKey = RedisKeyUtil.draftAddressKey(draftId);
+    String json = redisTemplate.opsForValue().get(redisKey);
+
+    if (json == null) {
+      throw new CustomException(AddressErrorCode.ADDRESS_DRAFT_NOT_FOUND);
+    }
+
+    try {
+      DraftAddressWrapper wrapper = objectMapper.readValue(json, DraftAddressWrapper.class);
+
+      return AddressFullResponse.builder()
+          .fromAddress(wrapper.fromAddress())
+          .toAddress(wrapper.toAddress())
+          .build();
+
+    } catch (Exception e) {
+      log.warn("[AddressDraft] 역직렬화 실패 - key: {}, 이유: {}", redisKey, e.getMessage());
+      throw new CustomException(AddressErrorCode.JSON_PARSE_ERROR);
+    }
+  }
+
 }
