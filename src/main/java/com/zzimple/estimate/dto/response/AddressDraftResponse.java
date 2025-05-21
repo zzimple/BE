@@ -14,4 +14,6 @@ public class AddressDraftResponse {
   @Schema(description = "도로명 주소", example = "서울특별시 강남구 테헤란로 223")
   private String roadAddr;
 
+  @Schema(description = "UUID draftId")
+  private final String draftId;
 }
