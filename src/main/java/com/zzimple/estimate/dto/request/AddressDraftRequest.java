@@ -26,18 +26,14 @@ public class AddressDraftRequest {
   @Schema(description = "건물 관리 번호", example = "1168010100106770025026369")
   private String buldMgtNo;
 
-  // 건물 관리 번호 나눠주는 것 -> 엘베 API 활용할 때 쓰기 위해.
-  public Address toEntity() {
-    String no1 = buldMgtNo.substring(0, 3);
-    String no2 = buldMgtNo.substring(3);
+  @Schema(description = "건물부번", example = "0")
+  private Number buldSlno;
 
-    return new Address(
-        roadFullAddr,
-        roadAddr,
-        zipNo,
-        addrDetail,
-        no1,
-        no2
-    );
-  }
+  @Schema(description = "읍면동명", example = "역삼동")
+  private String emdNm;
+
+  @Schema(description = "법정리명", example = "")
+  private String liNm;
+
+
 }
