@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zzimple.estimate.dto.response.HolidayCheckResponse;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.HolidayErrorCode;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +26,9 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class HolidayService {
 
+  @Value("${api.holiday.key}")
+  private String apiKey;
+
   private final StringRedisTemplate redisTemplate;
   private final RestTemplate restTemplate = new RestTemplate();
 
@@ -32,12 +36,11 @@ public class HolidayService {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   private static final String REDIS_KEY_PREFIX = "estimate:draft:holiday:";
+
   private static final Duration TTL = Duration.ofMinutes(1);  // 개발용이라 1분이라고 정함.
 
-  @Value("${api.holiday.key}")
-  private String apiKey;
 
-  public HolidayCheckResponse checkHoliday(String date) {
+  public HolidayCheckResponse checkHoliday(UUID draftId, String date) {
     String redisKey = REDIS_KEY_PREFIX + date;
 
     // 저장된 캐시 확인
