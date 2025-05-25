@@ -60,8 +60,7 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
-
-
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.18.3'
 }
 
 tasks.named('test') {
