@@ -86,8 +86,4 @@ public class MoveItemsDraftRequest {
   // 기타 부가적인 사용자 정의 항목
   @Schema(description = "기타 옵션 정보 (예: 비고, 구성 설명)", example = "{\"색상\": \"화이트\", \"설치방식\": \"벽걸이형\"}")
   private Map<String, String> details;
-
-  // 짐박스
-  @Schema(description = "짐 박스", example = "1")
-  private Integer box;
 }
