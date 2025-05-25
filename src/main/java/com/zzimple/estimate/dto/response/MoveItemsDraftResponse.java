@@ -1,10 +1,7 @@
 package com.zzimple.estimate.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +10,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "단일 짐 항목 응답")
+@Schema(description = "전체 짐 항목 응답")
 public class MoveItemsDraftResponse {
 
   @Schema(description = "현재 저장된 짐 항목 리스트")
@@ -23,9 +20,9 @@ public class MoveItemsDraftResponse {
   @Setter
   @NoArgsConstructor
   @AllArgsConstructor
-
+  @Schema(description = "짐 항목 상세")
   public static class MoveItemResponseDto {
-    @Schema(description = "엔트리 고유 ID", example = "f47ac10b-58cc-4372-a567-0e02b2c3d479")
+    @Schema(description = "엔트리 고유 ID", example = "uuid")
     private String entryId;
 
     @Schema(description = "짐 종류 ID", example = "101")
@@ -88,10 +85,10 @@ public class MoveItemsDraftResponse {
     @Schema(description = "고객 요청사항 메모", example = "엘리베이터 없음, 창문 진입 요청", nullable = true)
     private String requestNote;
 
-    @Schema(description = "기타 옵션 정보 (키-값 쌍)", nullable = true)
-    private Map<String, Object> details;
+    @Schema(description = "추가 옵션 정보 (키-값)")
+    private Map<String,String> details;
 
     @Schema(description = "짐 박스", example = "1")
-    private Integer box;
+    private Integer boxCount;
   }
 }
