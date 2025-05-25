@@ -1,13 +1,14 @@
 package com.zzimple.estimate.controller;
 
 import com.zzimple.estimate.dto.request.AddressDraftSaveRequest;
+import com.zzimple.estimate.dto.request.HolidaySaveRequest;
 import com.zzimple.estimate.dto.request.MoveItemsBatchRequest;
 import com.zzimple.estimate.dto.request.MoveOptionTypeRequest;
 import com.zzimple.estimate.dto.request.MoveTypeDraftRequest;
 import com.zzimple.estimate.dto.response.AddressDraftResponse;
 import com.zzimple.estimate.dto.response.EstimateDraftFullResponse;
 import com.zzimple.estimate.dto.response.HolidayPreviewResponse;
-import com.zzimple.estimate.dto.response.HolidaysaveResponse;
+import com.zzimple.estimate.dto.response.HolidaySaveResponse;
 import com.zzimple.estimate.dto.response.MoveItemsDraftResponse;
 import com.zzimple.estimate.dto.response.MoveOptionTypeResponse;
 import com.zzimple.estimate.dto.response.MoveTypeResponse;
@@ -114,17 +115,19 @@ public class EstimateDraftController {
           """
           **Parameters**  \n
           draftId: 사용자별 UUID  \n
-          date: 확인할 날짜 (형식: yyyyMMdd)  \n
-  
+          date: 저장할 날짜 (형식: yyyyMMdd)  \n
+          time: 저장할 시간 (형식: HH:mm)  \n
+          
           **Returns**  \n
           movedate: 저장된 이사 날짜 (형식: yyyyMMdd)  \n
+          movetime: 저장된 이사 시간 (형식: HH:mm)  \n
           """
   )
-  @GetMapping("/holiday/save")
-  public ResponseEntity<BaseResponse<HolidaysaveResponse>> checkHoliday(
+  @PostMapping("/holiday/save")
+  public ResponseEntity<BaseResponse<HolidaySaveResponse>> checkHoliday(
       @RequestParam UUID draftId,
-      @RequestParam String date) {
-    HolidaysaveResponse result = holidayService.saveMoveDate(draftId, date);
+      @RequestBody HolidaySaveRequest holidaySaveRequest) {
+    HolidaySaveResponse result = holidayService.saveMoveDate(draftId, holidaySaveRequest.getDate(), holidaySaveRequest.getTime());
     return ResponseEntity.ok(BaseResponse.success("공휴일 저장 및 조회 완료", result));
   }
 

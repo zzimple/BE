@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zzimple.estimate.dto.response.HolidayPreviewResponse;
-import com.zzimple.estimate.dto.response.HolidaysaveResponse;
+import com.zzimple.estimate.dto.response.HolidaySaveResponse;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.HolidayErrorCode;
@@ -113,20 +113,37 @@ public class HolidayService {
   }
 
   // 이사 예정일 저장
-  public HolidaysaveResponse saveMoveDate(UUID draftId, String moveDate) {
-    String key = RedisKeyUtil.draftMoveDateKey(draftId);
-    redisTemplate.opsForValue().set(key, moveDate, TTL);
+  public HolidaySaveResponse saveMoveDate(UUID draftId, String moveDate, String moveTime) {
+    // 날짜 저장
+    String dateKey = RedisKeyUtil.draftMoveDateKey(draftId);
+    redisTemplate.opsForValue().set(dateKey, moveDate, TTL);
+    log.info("[HolidayService] 이사 날짜 저장 - draftId={}, moveDate={}", draftId, moveDate);
 
-    return new HolidaysaveResponse(moveDate);
+    // 시간 저장
+    String timeKey = RedisKeyUtil.draftMoveTimeKey(draftId);
+    redisTemplate.opsForValue().set(timeKey, moveTime, TTL);
+    log.info("[HolidayService] 이사 시간 저장 - draftId={}, moveTime={}", draftId, moveTime);
+
+    return new HolidaySaveResponse(moveDate, moveTime);
   }
 
   // 저장된 이사 예정일 불러오기
-  public HolidaysaveResponse getMoveDate(UUID draftId) {
-    String key = RedisKeyUtil.draftMoveDateKey(draftId);
-    String moveDate = redisTemplate.opsForValue().get(key);
-    if (moveDate == null) {
+  public HolidaySaveResponse getMoveDate(UUID draftId) {
+    // 날짜 키 조회
+    String dateKey = RedisKeyUtil.draftMoveDateKey(draftId);
+    log.info("[HolidayService] 이사일 조회 - draftId={}, 키={}", draftId, dateKey);
+    String moveDate = redisTemplate.opsForValue().get(dateKey);
+
+    // 시간 키 조회
+    String timeKey = RedisKeyUtil.draftMoveTimeKey(draftId);
+    log.info("[HolidayService] 이사시간 조회 - draftId={}, 키={}", draftId, timeKey);
+    String moveTime = redisTemplate.opsForValue().get(timeKey);
+
+    if (moveDate == null || moveTime == null) {
+      log.warn("[HolidayService] 이사일 또는 이사시간 미발견 - 날짜키={}, 시간키={}", dateKey, timeKey);
       throw new CustomException(HolidayErrorCode.HOLIDAY_DRAFT_NOT_FOUND);
     }
-    return new HolidaysaveResponse(moveDate);
+    log.info("[HolidayService] 이사일/시간 반환 - draftId={}, 날짜={}, 시간={}", draftId, moveDate, moveTime);
+    return new HolidaySaveResponse(moveDate, moveTime);
   }
 }
