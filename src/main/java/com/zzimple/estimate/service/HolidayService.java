@@ -1,8 +1,10 @@
 package com.zzimple.estimate.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zzimple.estimate.dto.response.HolidayCheckResponse;
+import com.zzimple.estimate.dto.response.HolidayPreviewResponse;
+import com.zzimple.estimate.dto.response.HolidaysaveResponse;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.HolidayErrorCode;
@@ -11,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -36,20 +37,19 @@ public class HolidayService {
   // JSON 파싱을 위한 ObjectMapper
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  private static final Duration TTL = Duration.ofMinutes(1);  // 개발용이라 1분이라고 정함.
+  private static final Duration TTL = Duration.ofMinutes(30);
 
-
-  public HolidayCheckResponse checkHoliday(UUID draftId, String date) {
-    String redisKey = RedisKeyUtil.draftHolidayKey(draftId, date);
+  // 공휴일 미리 보기
+  public HolidayPreviewResponse previewHoliday(String date) {
+    String redisKey = RedisKeyUtil.previewHolidayKey(date);
 
     // 저장된 캐시 확인
     String cached = redisTemplate.opsForValue().get(redisKey);
     log.info("[HolidayService] 캐시 조회 → 키={}, 값={}", redisKey, cached);
 
-    // 저장된 캐시가 있다면 바로 반환 (API 호출 x)
     if (cached != null) {
       String[] parts = cached.split(":", 2);
-      return new HolidayCheckResponse(parts[0], parts.length > 1 ? parts[1] : null);
+      return new HolidayPreviewResponse(parts[0], parts.length > 1 ? parts[1] : null);
     }
 
     // 디폴트 값
@@ -69,66 +69,64 @@ public class HolidayService {
           .toUri();
 
       log.info("[HolidayService] 요청 URL: {}", apiUrl);
+      String json = restTemplate.getForEntity(apiUrl, String.class).getBody();
 
-      // API 호출
-      ResponseEntity<String> response = restTemplate.getForEntity(apiUrl, String.class);
-      String json = response.getBody();
+      JsonNode items = objectMapper
+          .readTree(json)
+          .path("response")
+          .path("body")
+          .path("items")
+          .path("item");
 
-      log.info("[HolidayService] raw JSON:\n{}", json);
-
-      // JSON 파싱
-      JsonNode root = objectMapper.readTree(json);
-      JsonNode items = root.path("response").path("body").path("items").path("item");
-
-      // 공휴일 목록에서 해당 날짜가 존재하는지 확인
       if (items.isArray()) {
         for (JsonNode item : items) {
-          String locdate = item.path("locdate").asText();
-          if (locdate.equals(date)) {
+          if (date.equals(item.path("locdate").asText())) {
             isHoliday = item.path("isHoliday").asText("N");
-            dateName = item.path("dateName").asText(null);
+            dateName  = item.path("dateName").asText(null);
             break;
           }
         }
       }
+    } catch (JsonProcessingException e) {
+      log.warn("[HolidayService] JSON 파싱 오류 - 날짜={}, 오류={}", date, e.getMessage());
+      throw new CustomException(HolidayErrorCode.API_CALL_FAILED);
     } catch (Exception e) {
-      log.warn("[HolidayCheck] 공휴일 API 호출 실패 - date: {}, 이유: {}", date, e.getMessage());
+      log.warn("[HolidayService] 외부 API 호출 실패 - 날짜={}, 오류={}", date, e.getMessage());
       throw new CustomException(HolidayErrorCode.API_CALL_FAILED);
     }
 
-    // 공휴일이 아니면 주말 체크
-    if (isHoliday.equals("N")) {
-      LocalDate localDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd"));
-      DayOfWeek dayOfWeek = localDate.getDayOfWeek();
-      if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+    // 주말 처리
+    if ("N".equals(isHoliday)) {
+      DayOfWeek dow = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd")).getDayOfWeek();
+      if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
         isHoliday = "Y";
-        dateName = "주말";
-        log.info("[HolidayService] 주말입니다 - {}", dayOfWeek);
+        dateName   = "주말";
+        log.info("[HolidayService] 주말 감지 - 요일={}", dow);
       }
     }
 
-    redisTemplate.opsForValue().set(redisKey, isHoliday + ":" + (dateName != null ? dateName : ""), TTL);
-    log.info("[HolidayService] 최종 결과 - isHoliday: {}, dateName: {}", isHoliday, dateName);
+    // 캐시 저장
+    redisTemplate.opsForValue()
+        .set(redisKey, isHoliday + ":" + (dateName != null ? dateName : ""), TTL);
 
-    return new HolidayCheckResponse(isHoliday, dateName);
+    return new HolidayPreviewResponse(isHoliday, dateName);
   }
 
-  // 불러오기
-  public HolidayCheckResponse getHolidayInfo(UUID draftId, String date) {
-    String redisKey = RedisKeyUtil.draftHolidayKey(draftId, date);
-    String cached = redisTemplate.opsForValue().get(redisKey);
+  // 이사 예정일 저장
+  public HolidaysaveResponse saveMoveDate(UUID draftId, String moveDate) {
+    String key = RedisKeyUtil.draftMoveDateKey(draftId);
+    redisTemplate.opsForValue().set(key, moveDate, TTL);
 
-    log.info("[HolidayService] 공휴일 정보 불러오기 - 키={}, 값={}", redisKey, cached);
+    return new HolidaysaveResponse(moveDate);
+  }
 
-    if (cached == null) {
+  // 저장된 이사 예정일 불러오기
+  public HolidaysaveResponse getMoveDate(UUID draftId) {
+    String key = RedisKeyUtil.draftMoveDateKey(draftId);
+    String moveDate = redisTemplate.opsForValue().get(key);
+    if (moveDate == null) {
       throw new CustomException(HolidayErrorCode.HOLIDAY_DRAFT_NOT_FOUND);
     }
-
-    String[] parts = cached.split(":", 2);
-    String isHoliday = parts[0];
-    String dateName = parts.length > 1 ? parts[1] : null;
-
-    return new HolidayCheckResponse(isHoliday, dateName);
+    return new HolidaysaveResponse(moveDate);
   }
-
 }
