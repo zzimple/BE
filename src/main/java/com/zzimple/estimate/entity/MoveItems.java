@@ -39,7 +39,7 @@ public class MoveItems {
   private String capacity;
 
   @Column(columnDefinition = "json")
-  private String details;  // JSON 문자열로 저장
+  private String details;
 
   @Column(columnDefinition = "TEXT")
   private String requestNote;
