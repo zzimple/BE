@@ -13,6 +13,9 @@ import java.util.Map;
 @Schema(description = "전체 짐 항목 응답")
 public class MoveItemsDraftResponse {
 
+  @Schema(description = "전체 박스 개수")
+  private Integer boxCount;
+
   @Schema(description = "현재 저장된 짐 항목 리스트")
   private List<MoveItemResponseDto> items;
 
@@ -49,46 +52,43 @@ public class MoveItemsDraftResponse {
     @Schema(description = "형태 분류 (직사각형, 원형 등)", example = "직사각형", nullable = true)
     private String shape;
 
-    @Schema(description = "용량 또는 무게", example = "10kg", nullable = true)
+    @Schema(description = "용량 또는 무게", example = "10kg")
     private String capacity;
 
-    @Schema(description = "문 개수", example = "3", nullable = true)
+    @Schema(description = "문 개수", example = "3")
     private Integer doorCount;
 
-    @Schema(description = "단위 개수 (예: 구성품 수량, 서랍 수 등)", example = "2", nullable = true)
+    @Schema(description = "단위 개수", example = "2")
     private Integer unitCount;
 
-    @Schema(description = "프레임 정보", example = "헤드+매트리스 일체형", nullable = true)
+    @Schema(description = "프레임 정보", example = "헤드+매트리스 일체형")
     private String frame;
 
-    @Schema(description = "유리 포함 여부", example = "false")
+    @Schema(description = "유리 포함 여부")
     private boolean hasGlass;
 
-    @Schema(description = "접이식 여부", example = "false")
+    @Schema(description = "접이식 여부")
     private boolean foldable;
 
-    @Schema(description = "바퀴 여부", example = "false")
+    @Schema(description = "바퀴 포함 여부")
     private boolean hasWheels;
 
-    @Schema(description = "프린터 포함 여부", example = "false")
+    @Schema(description = "프린터 포함 여부")
     private boolean hasPrinter;
 
-    @Schema(description = "정수기 유형", example = "냉온정", nullable = true)
+    @Schema(description = "정수기 유형", example = "냉온정")
     private String purifierType;
 
-    @Schema(description = "에어컨 유형", example = "스탠드형", nullable = true)
+    @Schema(description = "에어컨 유형", example = "스탠드형")
     private String acType;
 
-    @Schema(description = "특이사항", example = "분리 필요", nullable = true)
+    @Schema(description = "특이사항", example = "분리 필요")
     private String specialNote;
 
-    @Schema(description = "고객 요청사항 메모", example = "엘리베이터 없음, 창문 진입 요청", nullable = true)
+    @Schema(description = "고객 요청사항 메모", example = "엘리베이터 없음")
     private String requestNote;
 
     @Schema(description = "추가 옵션 정보 (키-값)")
     private Map<String,String> details;
-
-    @Schema(description = "짐 박스", example = "1")
-    private Integer boxCount;
   }
 }
