@@ -1,26 +1,34 @@
 package com.zzimple.estimate.controller;
 
 import com.zzimple.estimate.dto.request.AddressDraftSaveRequest;
+import com.zzimple.estimate.dto.request.MoveItemsBatchRequest;
 import com.zzimple.estimate.dto.request.MoveItemsDraftRequest;
+import com.zzimple.estimate.dto.request.MoveOptionTypeRequest;
+import com.zzimple.estimate.dto.request.MoveTypeDraftRequest;
 import com.zzimple.estimate.dto.response.AddressDraftResponse;
+import com.zzimple.estimate.dto.response.EstimateDraftFullResponse;
 import com.zzimple.estimate.dto.response.HolidayCheckResponse;
 import com.zzimple.estimate.dto.response.MoveItemsDraftResponse;
+import com.zzimple.estimate.dto.response.MoveOptionTypeResponse;
+import com.zzimple.estimate.dto.response.MoveTypeResponse;
 import com.zzimple.estimate.service.AddressService;
+import com.zzimple.estimate.service.EstimateDraftFullService;
 import com.zzimple.estimate.service.HolidayService;
 import com.zzimple.estimate.service.MoveItemsService;
+import com.zzimple.estimate.service.MoveOptionService;
+import com.zzimple.estimate.service.MoveTypeService;
 import com.zzimple.global.dto.BaseResponse;
-import com.zzimple.global.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,6 +43,9 @@ public class EstimateDraftController {
   private final AddressService addressService;
   private final HolidayService holidayService;
   private final MoveItemsService moveItemsService;
+  private final MoveTypeService moveTypeService;
+  private final MoveOptionService moveOptionService;
+  private final EstimateDraftFullService estimateDraftFullService;
 
   @Operation(
       summary = "[ 고객 | 토큰 O | 견적서 - draftId 생성 ]",
@@ -100,44 +111,80 @@ public class EstimateDraftController {
     return ResponseEntity.ok(BaseResponse.success("공휴일 저장 완료되었습니다.",result));
   }
 
-
   @Operation(
-      summary = "[ 고객 | 토큰 O | 견적서 - 짐 항목 하나 추가 ]",
-      description = "사용자가 선택한 짐 항목 하나를 Redis에 추가 저장합니다."
+      summary = "[고객 | 토큰 O | 견적서 - 짐 항목 일괄 저장]",
+      description = "전체 박스 개수와 모든 짐 항목 리스트를 받아 Redis에 덮어씁니다."
   )
-  @PostMapping("/move-item")
-  public ResponseEntity<BaseResponse<MoveItemsDraftResponse>> addMoveItem(
+  @PutMapping(value = "/move-items", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<BaseResponse<MoveItemsDraftResponse>> saveAllMoveItems(
       @RequestParam UUID draftId,
-      @RequestBody MoveItemsDraftRequest itemDto
+      @RequestBody MoveItemsBatchRequest batchRequest
   ) {
-    MoveItemsDraftResponse response = moveItemsService.appendMoveItem(draftId, itemDto);
-    return ResponseEntity.ok(BaseResponse.success("짐 추가가 완료되었습니다.",response));
+    MoveItemsDraftResponse response = moveItemsService.saveAllMoveItems(draftId, batchRequest);
+    return ResponseEntity.ok(BaseResponse.success("짐 항목 일괄 저장이 완료되었습니다.", response));
   }
 
-
   @Operation(
-      summary = "[ 고객 | 토큰 O | 견적서 - 짐 항목 하나 삭제 ]",
-      description = "이미 선택한 짐 항목(itemTypeId 기준)을 삭제합니다."
+      summary = "[고객 | 토큰 O | 견적서 - 짐 항목 전체 조회]",
+      description = "저장된 모든 짐 항목과 전체 박스 개수를 조회합니다."
   )
-  @DeleteMapping("/move-item/{entryId}")
-  public ResponseEntity<BaseResponse<Void>> removeMoveItem(
-      @RequestParam UUID draftId,
-      @PathVariable String entryId
-  ) {
-    moveItemsService.removeMoveItemByEntryId(draftId, entryId);
-    return ResponseEntity.ok(BaseResponse.success("짐 삭제가 완료되었습니다.",null));
-  }
-
-
-  @Operation(
-      summary = "[ 고객 | 토큰 O | 견적서 - 저장된 짐 항목 전체 조회 ]",
-      description = "Redis에 임시 저장된 MoveItemRequestDto 리스트를 조회합니다."
-  )
-  @GetMapping("/move-item")
-  public ResponseEntity<BaseResponse<MoveItemsDraftResponse>> getMoveItems(
+  @GetMapping("/move-items")
+  public ResponseEntity<BaseResponse<MoveItemsDraftResponse>> getAllMoveItems(
       @RequestParam UUID draftId
   ) {
     MoveItemsDraftResponse response = moveItemsService.getMoveItemsAsResponse(draftId);
-    return ResponseEntity.ok(BaseResponse.success("모든 짐 리스트를 조회했습니다.",response));
+    return ResponseEntity.ok(BaseResponse.success("짐 항목 조회가 완료되었습니다.", response));
+  }
+
+  @Operation(
+      summary = "[ 고객 | 토큰 O | 견적서 - 이사 유형 저장 ]",
+      description = """
+        **Parameters**  \n
+        draftId: 견적서 고유 ID(UUID)  \n
+
+        **Returns**  \n
+        moveType: 저장된 이사 유형  \n
+        """
+  )
+  @PostMapping("/move-type")
+  public ResponseEntity<BaseResponse<MoveTypeResponse>> saveMoveType(
+      @RequestParam UUID draftId,
+      @RequestBody MoveTypeDraftRequest request
+  ) {
+    MoveTypeResponse response = moveTypeService.saveMoveType(draftId, request);
+    return ResponseEntity.ok(BaseResponse.success("이사 유형이 저장되었습니다.", response));
+  }
+
+  @Operation(
+      summary = "[ 고객 | 토큰 O | 견적서 - 소형 이사 옵션 저장 ]",
+      description = """
+        **Parameters**  \n
+        draftId: 견적서 고유 ID(UUID)  \n
+        optionType: 선택한 이사 옵션 (BASIC / PACKAGING / SEMI_PACKAGING)  \n
+
+        **Returns**  \n
+        optionType: 저장된 이사 옵션  \n
+        """
+  )
+  @PostMapping("/move-option")
+  public ResponseEntity<BaseResponse<MoveOptionTypeResponse>> saveMoveOptionType(
+      @RequestParam UUID draftId,
+      @RequestBody MoveOptionTypeRequest request
+  ) {
+    MoveOptionTypeResponse response = moveOptionService.saveMoveOptionType(draftId, request);
+    return ResponseEntity.ok(BaseResponse.success("소형 이사 옵션이 저장되었습니다.", response));
+  }
+
+  @Operation(
+      summary = "[ 고객 | 토큰 O | 견적서 - 모든 데이터 통합 조회 ]",
+      description = "draftId를 기준으로 주소, 이사유형, 짐 목록, 공휴일, 옵션 등을 통합 조회합니다."
+  )
+  @GetMapping("/full")
+  public ResponseEntity<BaseResponse<EstimateDraftFullResponse>> getFullDraft(
+      @RequestParam UUID draftId,
+      @RequestParam String date // 공휴일 조회용
+  ) {
+    EstimateDraftFullResponse response = estimateDraftFullService.getFullDraft(draftId, date);
+    return ResponseEntity.ok(BaseResponse.success("견적 초안 전체 데이터를 조회했습니다.", response));
   }
 }
