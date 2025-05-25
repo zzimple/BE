@@ -2,16 +2,17 @@ package com.zzimple.estimate.controller;
 
 import com.zzimple.estimate.dto.request.AddressDraftSaveRequest;
 import com.zzimple.estimate.dto.request.MoveItemsBatchRequest;
-import com.zzimple.estimate.dto.request.MoveItemsDraftRequest;
 import com.zzimple.estimate.dto.request.MoveOptionTypeRequest;
 import com.zzimple.estimate.dto.request.MoveTypeDraftRequest;
 import com.zzimple.estimate.dto.response.AddressDraftResponse;
 import com.zzimple.estimate.dto.response.EstimateDraftFullResponse;
-import com.zzimple.estimate.dto.response.HolidayCheckResponse;
+import com.zzimple.estimate.dto.response.HolidayPreviewResponse;
+import com.zzimple.estimate.dto.response.HolidaysaveResponse;
 import com.zzimple.estimate.dto.response.MoveItemsDraftResponse;
 import com.zzimple.estimate.dto.response.MoveOptionTypeResponse;
 import com.zzimple.estimate.dto.response.MoveTypeResponse;
 import com.zzimple.estimate.service.AddressService;
+//import com.zzimple.estimate.service.EstimateDraftFullService;
 import com.zzimple.estimate.service.EstimateDraftFullService;
 import com.zzimple.estimate.service.HolidayService;
 import com.zzimple.estimate.service.MoveItemsService;
@@ -19,7 +20,6 @@ import com.zzimple.estimate.service.MoveOptionService;
 import com.zzimple.estimate.service.MoveTypeService;
 import com.zzimple.global.dto.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -91,7 +91,7 @@ public class EstimateDraftController {
   }
 
   @Operation(
-      summary = "[ 고객 | 토큰 O | 견적서 - 공휴일 여부 확인 및 저장 ]",
+      summary = "[ 고객 | 토큰 O | 공휴일 미리보기 ]",
       description =
           """
           **Parameters**  \n
@@ -102,13 +102,31 @@ public class EstimateDraftController {
           dateName: 공휴일 이름 (예: 어린이날), 공휴일이 아닐 경우 null  \n
           """
   )
-  @GetMapping("/holiday/check")
-  public ResponseEntity<BaseResponse<HolidayCheckResponse>> checkHoliday(
+  @GetMapping("/holiday/preview")
+  public ResponseEntity<BaseResponse<HolidayPreviewResponse>> previewHoliday(
+      @RequestParam String date) {
+    HolidayPreviewResponse result = holidayService.previewHoliday(date);
+    return ResponseEntity.ok(BaseResponse.success("공휴일 여부 미리보기 조회 완료", result));
+  }
+
+  @Operation(
+      summary = "[ 고객 | 토큰 O | 견적서 - 공휴일 저장 ]",
+      description =
+          """
+          **Parameters**  \n
+          draftId: 사용자별 UUID  \n
+          date: 확인할 날짜 (형식: yyyyMMdd)  \n
+  
+          **Returns**  \n
+          movedate: 저장된 이사 날짜 (형식: yyyyMMdd)  \n
+          """
+  )
+  @GetMapping("/holiday/save")
+  public ResponseEntity<BaseResponse<HolidaysaveResponse>> checkHoliday(
       @RequestParam UUID draftId,
-      @RequestParam String date
-  ) {
-    HolidayCheckResponse result = holidayService.checkHoliday(draftId, date);
-    return ResponseEntity.ok(BaseResponse.success("공휴일 저장 완료되었습니다.",result));
+      @RequestParam String date) {
+    HolidaysaveResponse result = holidayService.saveMoveDate(draftId, date);
+    return ResponseEntity.ok(BaseResponse.success("공휴일 저장 및 조회 완료", result));
   }
 
   @Operation(
@@ -180,11 +198,8 @@ public class EstimateDraftController {
       description = "draftId를 기준으로 주소, 이사유형, 짐 목록, 공휴일, 옵션 등을 통합 조회합니다."
   )
   @GetMapping("/full")
-  public ResponseEntity<BaseResponse<EstimateDraftFullResponse>> getFullDraft(
-      @RequestParam UUID draftId,
-      @RequestParam String date // 공휴일 조회용
-  ) {
-    EstimateDraftFullResponse response = estimateDraftFullService.getFullDraft(draftId, date);
+  public ResponseEntity<BaseResponse<EstimateDraftFullResponse>> getFullDraft(@RequestParam UUID draftId) {
+    EstimateDraftFullResponse response = estimateDraftFullService.getFullDraft(draftId);
     return ResponseEntity.ok(BaseResponse.success("견적 초안 전체 데이터를 조회했습니다.", response));
   }
 }
