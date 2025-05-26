@@ -1,13 +1,17 @@
 package com.zzimple.estimate.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zzimple.estimate.dto.response.HolidayPreviewResponse;
+import com.zzimple.estimate.dto.response.MonthlyHolidayPreviewResponse;
 import com.zzimple.estimate.dto.response.HolidaySaveResponse;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.HolidayErrorCode;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,85 +47,80 @@ public class HolidayService {
   private static final Duration TTL = Duration.ofMinutes(30);
 
   // 공휴일 미리 보기
-  public HolidayPreviewResponse previewHoliday(String date) {
-    String redisKey = RedisKeyUtil.previewHolidayKey(date);
-
-    // 저장된 캐시 확인
-    String cached = redisTemplate.opsForValue().get(redisKey);
-    log.info("[HolidayService] 캐시 조회 → 키={}, 값={}", redisKey, cached);
-
-    if (cached != null) {
-      String[] parts = cached.split(":", 2);
-      return new HolidayPreviewResponse(parts[0], parts.length > 1 ? parts[1] : null);
+  public List<MonthlyHolidayPreviewResponse> previewMonthlyHolidays(String yearMonth) {
+    String cacheKey = String.format("estimate:preview:monthly-holiday:%s", yearMonth);
+    String cachedJson = redisTemplate.opsForValue().get(cacheKey);
+    if (cachedJson != null) {
+      try {
+        return objectMapper.readValue(
+            cachedJson,
+            objectMapper.getTypeFactory().constructCollectionType(
+                List.class, MonthlyHolidayPreviewResponse.class));
+      } catch (Exception e) {
+        log.warn("[HolidayService] 월별 캐시 파싱 오류 - yearMonth={}, error={}", yearMonth, e.getMessage());
+      }
     }
 
-    // 디폴트 값
-    String isHoliday = "N";
-    String dateName = null;
+    String year = yearMonth.substring(0,4);
+    String month = yearMonth.substring(4,6);
+    URI apiUrl = UriComponentsBuilder.fromUriString(
+            "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo")
+        .queryParam("serviceKey", holiday_api_key)
+        .queryParam("solYear", year)
+        .queryParam("solMonth", month)
+        .queryParam("numOfRows", "100")
+        .queryParam("pageNo", "1")
+        .queryParam("_type", "json")
+        .build(true).toUri();
+    log.info("[HolidayService] 월별 요청 URL: {}", apiUrl);
+    List<MonthlyHolidayPreviewResponse> result = new ArrayList<>();
 
     try {
-      URI apiUrl = UriComponentsBuilder
-          .fromUriString("https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo")
-          .queryParam("serviceKey", holiday_api_key)
-          .queryParam("solYear", date.substring(0, 4))
-          .queryParam("solMonth", date.substring(4, 6))
-          .queryParam("numOfRows", "100")
-          .queryParam("pageNo", "1")
-          .queryParam("_type", "json")
-          .build(true)
-          .toUri();
-
-      log.info("[HolidayService] 요청 URL: {}", apiUrl);
       String json = restTemplate.getForEntity(apiUrl, String.class).getBody();
-
-      JsonNode items = objectMapper
-          .readTree(json)
-          .path("response")
-          .path("body")
-          .path("items")
-          .path("item");
-
+      JsonNode items = objectMapper.readTree(json)
+          .path("response").path("body").path("items").path("item");
+      Map<String, String> holidayMap = new HashMap<>();
       if (items.isArray()) {
         for (JsonNode item : items) {
-          if (date.equals(item.path("locdate").asText())) {
-            isHoliday = item.path("isHoliday").asText("N");
-            dateName  = item.path("dateName").asText(null);
-            break;
-          }
+          String date = item.path("locdate").asText();
+          String name = item.path("dateName").asText(null);
+          holidayMap.put(date, name != null ? name : "");
         }
       }
-    } catch (JsonProcessingException e) {
-      log.warn("[HolidayService] JSON 파싱 오류 - 날짜={}, 오류={}", date, e.getMessage());
-      throw new CustomException(HolidayErrorCode.API_CALL_FAILED);
+
+      YearMonth ym = YearMonth.parse(yearMonth, DateTimeFormatter.ofPattern("yyyyMM"));
+      DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+      for (int day = 1; day <= ym.lengthOfMonth(); day++) {
+        String date = ym.atDay(day).format(fmt);
+        String isHoliday = holidayMap.containsKey(date) ? "Y" : "N";
+        String dateName = holidayMap.get(date);
+        DayOfWeek dow = ym.atDay(day).getDayOfWeek();
+
+        if ("N".equals(isHoliday) && (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY)) {
+          isHoliday = "Y";
+          dateName = "주말";
+        }
+
+        if ("N".equals(isHoliday)) {
+          String lunarResult = checkGoodMoveDay(date);
+          if (lunarResult != null) {
+            isHoliday = "Y";
+            dateName = lunarResult;
+          }
+        }
+
+        result.add(new MonthlyHolidayPreviewResponse(date, isHoliday, dateName));
+      }
+
+      String outJson = objectMapper.writeValueAsString(result);
+      redisTemplate.opsForValue().set(cacheKey, outJson, TTL);
     } catch (Exception e) {
-      log.warn("[HolidayService] 외부 API 호출 실패 - 날짜={}, 오류={}", date, e.getMessage());
+      log.warn("[HolidayService] 월별 공휴일 조회 실패 - yearMonth={}, error={}", yearMonth, e.getMessage());
       throw new CustomException(HolidayErrorCode.API_CALL_FAILED);
     }
 
-    // 주말 처리
-    if ("N".equals(isHoliday)) {
-      DayOfWeek dow = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd")).getDayOfWeek();
-      if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
-        isHoliday = "Y";
-        dateName   = "주말";
-        log.info("[HolidayService] 주말 감지 - 요일={}", dow);
-      }
-    }
-
-    if ("N".equals(isHoliday)) {
-      String lunarResult = checkGoodMoveDay(date);
-      log.info("[HolidayService] 손 없는 날 여부 확인 결과 - date={}, result={}", date, lunarResult);
-      if (lunarResult != null) {
-        isHoliday = "Y";
-        dateName = lunarResult;
-      }
-    }
-
-    // 캐시 저장
-    redisTemplate.opsForValue()
-        .set(redisKey, isHoliday + ":" + (dateName != null ? dateName : ""), TTL);
-
-    return new HolidayPreviewResponse(isHoliday, dateName);
+    return result;
   }
 
   private String checkGoodMoveDay(String date) {
@@ -170,20 +169,25 @@ public class HolidayService {
     redisTemplate.opsForValue().set(timeKey, moveTime, TTL);
     log.info("[HolidayService] 이사 시간 저장 - draftId={}, moveTime={}", draftId, moveTime);
 
-    // 공휴일 정보 확인 및 저장
-    HolidayPreviewResponse preview = previewHoliday(moveDate);
+    // 공휴일 정보 조회: 월 단위로 가져온 후 해당 날짜 필터링
+    String yearMonth = moveDate.substring(0, 6);
+    List<MonthlyHolidayPreviewResponse> monthly = previewMonthlyHolidays(yearMonth);
+    MonthlyHolidayPreviewResponse matched = monthly.stream()
+        .filter(m -> m.getDate().equals(moveDate))
+        .findFirst()
+        .orElseThrow(() -> new CustomException(HolidayErrorCode.API_CALL_FAILED));
+
+    // Redis에 공휴일 정보 저장
     String holidayInfoKey = RedisKeyUtil.draftMoveHolidayKey(draftId);
-    String holidayInfoValue = preview.getIsHoliday()
-        + ":"
-        + (preview.getDateName() != null ? preview.getDateName() : "");
+    String holidayInfoValue = matched.getHoliday() + ":" + (matched.getDateName() != null ? matched.getDateName() : "");
     redisTemplate.opsForValue().set(holidayInfoKey, holidayInfoValue, TTL);
     log.info("[HolidayService] 공휴일 정보 저장 - draftId={}, holidayInfo={}", draftId, holidayInfoValue);
 
-    // 응답에 공휴일 이름까지 포함
+    // 응답에 공휴일 이름까지 포함하여 반환
     return new HolidaySaveResponse(
         moveDate,
         moveTime,
-        preview.getDateName()
+        matched.getDateName()
     );
   }
 

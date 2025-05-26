@@ -7,7 +7,7 @@ import com.zzimple.estimate.dto.request.MoveOptionTypeRequest;
 import com.zzimple.estimate.dto.request.MoveTypeDraftRequest;
 import com.zzimple.estimate.dto.response.AddressDraftResponse;
 import com.zzimple.estimate.dto.response.EstimateDraftFullResponse;
-import com.zzimple.estimate.dto.response.HolidayPreviewResponse;
+import com.zzimple.estimate.dto.response.MonthlyHolidayPreviewResponse;
 import com.zzimple.estimate.dto.response.HolidaySaveResponse;
 import com.zzimple.estimate.dto.response.MoveItemsDraftResponse;
 import com.zzimple.estimate.dto.response.MoveOptionTypeResponse;
@@ -20,6 +20,7 @@ import com.zzimple.estimate.service.MoveOptionService;
 import com.zzimple.estimate.service.MoveTypeService;
 import com.zzimple.global.dto.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -91,22 +92,21 @@ public class EstimateDraftController {
   }
 
   @Operation(
-      summary = "[ 고객 | 토큰 O | 공휴일 미리보기 ]",
+      summary = "[ 고객 | 토큰 O | 월별 공휴일 미리보기 ]",
       description =
           """
-          **Parameters**  \n
-          date: 확인할 날짜 (형식: yyyyMMdd)  \n
+          **Parameters**  
+          yearMonth: 확인할 월 (형식: yyyyMM)  
   
-          **Returns**  \n
-          isHoliday: 공휴일 여부 (Y / N)  \n
-          dateName: 공휴일 이름 (예: 어린이날), 공휴일이 아닐 경우 null  \n
+          **Returns**  
+          월의 각 날짜별 공휴일 정보 리스트 (date, holiday, dateName)
           """
   )
-  @GetMapping("/holiday/preview")
-  public ResponseEntity<BaseResponse<HolidayPreviewResponse>> previewHoliday(
-      @RequestParam String date) {
-    HolidayPreviewResponse result = holidayService.previewHoliday(date);
-    return ResponseEntity.ok(BaseResponse.success("공휴일 여부 미리보기 조회 완료", result));
+  @GetMapping("/holidays/preview")
+  public ResponseEntity<BaseResponse<List<MonthlyHolidayPreviewResponse>>> previewMonthlyHolidays(
+      @RequestParam String yearMonth) {
+    List<MonthlyHolidayPreviewResponse> result = holidayService.previewMonthlyHolidays(yearMonth);
+    return ResponseEntity.ok(BaseResponse.success("월별 공휴일 정보 조회 완료", result));
   }
 
   @Operation(
