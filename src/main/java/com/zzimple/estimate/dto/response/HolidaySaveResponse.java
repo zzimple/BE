@@ -19,4 +19,7 @@ public class HolidaySaveResponse {
 
   @Schema(description = "이사 시간 (시:분)", example = "14:30")
   private String moveTime;
+
+  @Schema(description = "공휴일 이름 (없으면 null)", example = "어린이날")
+  private String dateName;
 }

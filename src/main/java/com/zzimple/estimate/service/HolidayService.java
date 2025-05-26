@@ -170,7 +170,21 @@ public class HolidayService {
     redisTemplate.opsForValue().set(timeKey, moveTime, TTL);
     log.info("[HolidayService] 이사 시간 저장 - draftId={}, moveTime={}", draftId, moveTime);
 
-    return new HolidaySaveResponse(moveDate, moveTime);
+    // 공휴일 정보 확인 및 저장
+    HolidayPreviewResponse preview = previewHoliday(moveDate);
+    String holidayInfoKey = RedisKeyUtil.draftMoveHolidayKey(draftId);
+    String holidayInfoValue = preview.getIsHoliday()
+        + ":"
+        + (preview.getDateName() != null ? preview.getDateName() : "");
+    redisTemplate.opsForValue().set(holidayInfoKey, holidayInfoValue, TTL);
+    log.info("[HolidayService] 공휴일 정보 저장 - draftId={}, holidayInfo={}", draftId, holidayInfoValue);
+
+    // 응답에 공휴일 이름까지 포함
+    return new HolidaySaveResponse(
+        moveDate,
+        moveTime,
+        preview.getDateName()
+    );
   }
 
   // 저장된 이사 예정일 불러오기
@@ -185,11 +199,25 @@ public class HolidayService {
     log.info("[HolidayService] 이사시간 조회 - draftId={}, 키={}", draftId, timeKey);
     String moveTime = redisTemplate.opsForValue().get(timeKey);
 
-    if (moveDate == null || moveTime == null) {
-      log.warn("[HolidayService] 이사일 또는 이사시간 미발견 - 날짜키={}, 시간키={}", dateKey, timeKey);
-      throw new CustomException(HolidayErrorCode.HOLIDAY_DRAFT_NOT_FOUND);
+    // 공휴일 정보 키 조회
+    String holidayInfoKey = RedisKeyUtil.draftMoveHolidayKey(draftId);
+    log.info("[HolidayService] 공휴일 정보 조회 - draftId={}, 키={}", draftId, holidayInfoKey);
+    String holidayInfoValue = redisTemplate.opsForValue().get(holidayInfoKey);
+    // holidayInfoValue 포맷: "Y:어린이날" 또는 "N:"
+    String dateName = null;
+    if (holidayInfoValue != null && holidayInfoValue.contains(":")) {
+      String[] parts = holidayInfoValue.split(":", 2);
+      // parts[0] = "Y" or "N", parts[1] = 날짜명 or ""
+      dateName = parts[1].isEmpty() ? null : parts[1];
     }
-    log.info("[HolidayService] 이사일/시간 반환 - draftId={}, 날짜={}, 시간={}", draftId, moveDate, moveTime);
-    return new HolidaySaveResponse(moveDate, moveTime);
+
+    log.info("[HolidayService] 이사일/시간/공휴일명 반환 - draftId={}, 날짜={}, 시간={}, 공휴일명={}",
+        draftId, moveDate, moveTime, dateName);
+
+    return new HolidaySaveResponse(
+        moveDate,
+        moveTime,
+        dateName
+    );
   }
 }
