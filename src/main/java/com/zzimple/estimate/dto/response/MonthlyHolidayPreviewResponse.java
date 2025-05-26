@@ -6,11 +6,14 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-@Schema(description = "출발지/도착지 - 묶음 응답")
-public class HolidayPreviewResponse {
+@Schema(description = "공휴일 프리뷰 응답")
+public class MonthlyHolidayPreviewResponse {
 
-  @Schema(description = "공휴일 여부", example = "Y")
-  private String isHoliday;
+  @Schema(description = "날짜(yyyyMMdd)", example = "20250506")
+  private String date;
+
+  @Schema(description = "공휴일 여부 (Y/N)", example = "Y")
+  private String holiday;
 
   @Schema(description = "공휴일 이름 (없으면 null)", example = "어린이날")
   private String dateName;
