@@ -29,7 +29,10 @@ import java.time.format.DateTimeFormatter;
 public class HolidayService {
 
   @Value("${api.holiday.key}")
-  private String apiKey;
+  private String holiday_api_key;
+
+  @Value("${api.lunar.key}")
+  private String lunar_api_key;
 
   private final StringRedisTemplate redisTemplate;
   private final RestTemplate restTemplate = new RestTemplate();
@@ -59,7 +62,7 @@ public class HolidayService {
     try {
       URI apiUrl = UriComponentsBuilder
           .fromUriString("https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo")
-          .queryParam("serviceKey", apiKey)
+          .queryParam("serviceKey", holiday_api_key)
           .queryParam("solYear", date.substring(0, 4))
           .queryParam("solMonth", date.substring(4, 6))
           .queryParam("numOfRows", "100")
@@ -105,12 +108,55 @@ public class HolidayService {
       }
     }
 
+    if ("N".equals(isHoliday)) {
+      String lunarResult = checkGoodMoveDay(date);
+      log.info("[HolidayService] 손 없는 날 여부 확인 결과 - date={}, result={}", date, lunarResult);
+      if (lunarResult != null) {
+        isHoliday = "Y";
+        dateName = lunarResult;
+      }
+    }
+
     // 캐시 저장
     redisTemplate.opsForValue()
         .set(redisKey, isHoliday + ":" + (dateName != null ? dateName : ""), TTL);
 
     return new HolidayPreviewResponse(isHoliday, dateName);
   }
+
+  private String checkGoodMoveDay(String date) {
+    try {
+      LocalDate solar = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+      URI lunarApi = UriComponentsBuilder
+          .fromUriString("https://apis.data.go.kr/B090041/openapi/service/LrsrCldInfoService/getLunCalInfo")
+          .queryParam("ServiceKey", lunar_api_key)
+          .queryParam("solYear", solar.getYear())
+          .queryParam("solMonth", String.format("%02d", solar.getMonthValue()))
+          .queryParam("solDay", String.format("%02d", solar.getDayOfMonth()))
+          .queryParam("_type", "json")
+          .build(true)
+          .toUri();
+
+      String lunarJson = restTemplate.getForObject(lunarApi, String.class);
+      JsonNode item = objectMapper.readTree(lunarJson)
+          .path("response").path("body").path("items").path("item");
+
+      int lunarDay = item.path("lunDay").asInt();
+
+      if (lunarDay == 9 || lunarDay == 10 ||
+          lunarDay == 19 || lunarDay == 20 ||
+          lunarDay == 29 || lunarDay == 30) {
+        log.info("[HolidayService] 손 없는 날 감지 - lunarDay={} (양력 {})", lunarDay, date);
+        return "손 없는 날";
+      }
+
+    } catch (Exception e) {
+      log.warn("[HolidayService] 손 없는 날 확인 실패 - date={}, error={}", date, e.getMessage());
+    }
+    return null;
+  }
+
 
   // 이사 예정일 저장
   public HolidaySaveResponse saveMoveDate(UUID draftId, String moveDate, String moveTime) {
