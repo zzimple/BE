@@ -2,6 +2,8 @@ package com.zzimple.estimate.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,4 +24,8 @@ public class HolidaySaveResponse {
 
   @Schema(description = "공휴일 이름 (없으면 null)", example = "어린이날")
   private String dateName;
+
+  public LocalDateTime getScheduledAt() {
+    return LocalDateTime.parse(movedate + "T" + moveTime + ":00", DateTimeFormatter.ofPattern("yyyyMMdd'T'HH:mm:ss"));
+  }
 }
