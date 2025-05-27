@@ -31,4 +31,7 @@ public class RedisKeyUtil {
   public static String draftMoveOptionKey(UUID draftId) {
     return "draft:move-option:" + draftId;
   }
+  public static String draftMoveHolidayKey(UUID draftId) {
+    return String.format("estimate:draft:%s:move-holiday", draftId);
+  }
 }
