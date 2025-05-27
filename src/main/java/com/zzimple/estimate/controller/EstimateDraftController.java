@@ -14,11 +14,13 @@ import com.zzimple.estimate.dto.response.MoveOptionTypeResponse;
 import com.zzimple.estimate.dto.response.MoveTypeResponse;
 import com.zzimple.estimate.service.AddressService;
 import com.zzimple.estimate.service.EstimateDraftFullService;
+import com.zzimple.estimate.service.EstimatePublicService;
 import com.zzimple.estimate.service.HolidayService;
 import com.zzimple.estimate.service.MoveItemsService;
 import com.zzimple.estimate.service.MoveOptionService;
 import com.zzimple.estimate.service.MoveTypeService;
 import com.zzimple.global.dto.BaseResponse;
+import com.zzimple.global.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -203,5 +206,21 @@ public class EstimateDraftController {
   public ResponseEntity<BaseResponse<EstimateDraftFullResponse>> getFullDraft(@RequestParam UUID draftId) {
     EstimateDraftFullResponse response = estimateDraftFullService.getFullDraft(draftId);
     return ResponseEntity.ok(BaseResponse.success("견적 초안 전체 데이터를 조회했습니다.", response));
+  }
+
+  @Operation(
+      summary = "[ 고객 | 토큰 O | 견적서 최종 제출 → DB 저장 ]",
+      description = """
+              draftId로 Redis에 임시 저장된 견적서를 DB에 영구 저장합니다. \n
+              저장이 완료되면 estimateId(PK)가 반환됩니다.
+          """
+  )
+  @PostMapping("/finalize")
+  public ResponseEntity<BaseResponse<Long>> finalizeEstimate(
+      @RequestParam UUID draftId,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    Long estimateId = estimateDraftFullService.finalizeEstimateDraft(draftId, userDetails);
+    return ResponseEntity.ok(BaseResponse.success("견적서가 저장되었습니다.", estimateId));
   }
 }
