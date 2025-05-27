@@ -1,9 +1,9 @@
-package com.zzimple.estimate.entity;
+package com.zzimple.estimate.guest.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.zzimple.estimate.enums.EstimateStatus;
-import com.zzimple.estimate.enums.MoveOptionType;
-import com.zzimple.estimate.enums.MoveType;
+import com.zzimple.estimate.guest.enums.EstimateStatus;
+import com.zzimple.estimate.guest.enums.MoveOptionType;
+import com.zzimple.estimate.guest.enums.MoveType;
 import com.zzimple.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -66,15 +66,32 @@ public class Estimate extends BaseTimeEntity {
   })
   private Address toAddress;
 
+  @Embedded
+  @AttributeOverrides({
+      @AttributeOverride(name = "floor", column = @Column(name = "from_floor")),
+      @AttributeOverride(name = "hasStairs", column = @Column(name = "from_has_stairs")),
+      @AttributeOverride(name = "hasParking", column = @Column(name = "from_has_parking")),
+      @AttributeOverride(name = "elevator", column = @Column(name = "from_elevator")),
+      @AttributeOverride(name = "buildingType", column = @Column(name = "from_building_type")),
+      @AttributeOverride(name = "roomStructure", column = @Column(name = "from_room_structure")),
+      @AttributeOverride(name = "sizeOption", column = @Column(name = "from_size_option"))
+  })
+  private AddressDetailInfo fromDetail;
+
+  @Embedded
+  @AttributeOverrides({
+      @AttributeOverride(name = "floor", column = @Column(name = "to_floor")),
+      @AttributeOverride(name = "hasStairs", column = @Column(name = "to_has_stairs")),
+      @AttributeOverride(name = "hasParking", column = @Column(name = "to_has_parking")),
+      @AttributeOverride(name = "elevator", column = @Column(name = "to_elevator")),
+      @AttributeOverride(name = "buildingType", column = @Column(name = "to_building_type")),
+      @AttributeOverride(name = "roomStructure", column = @Column(name = "to_room_structure")),
+      @AttributeOverride(name = "sizeOption", column = @Column(name = "to_size_option"))
+  })
+  private AddressDetailInfo toDetail;
+
   @Column(length = 8)
   private String moveDate; // yyyyMMdd, 혹은 LocalDate 타입 권장
-
-  private Integer fromFloor;
-
-  private Integer toFloor;
-
-  @Column(columnDefinition = "TINYINT(1)")
-  private Boolean hasElevator;
 
   @Enumerated(EnumType.STRING)
   private EstimateStatus status;
@@ -90,11 +107,10 @@ public class Estimate extends BaseTimeEntity {
       LocalDateTime scheduledAt,
       Address fromAddress,
       Address toAddress,
-      Integer fromFloor,
-      Integer toFloor,
-      Boolean hasElevator,
       String moveDate,
-      String customerMemo
+      String customerMemo,
+      AddressDetailInfo fromDetail,
+      AddressDetailInfo toDetail
   ) {
     Estimate estimate = new Estimate();
     estimate.customerId = customerId;
@@ -103,11 +119,10 @@ public class Estimate extends BaseTimeEntity {
     estimate.scheduledAt = scheduledAt;
     estimate.fromAddress = fromAddress;
     estimate.toAddress = toAddress;
-    estimate.fromFloor = fromFloor;
-    estimate.toFloor = toFloor;
-    estimate.hasElevator = hasElevator;
     estimate.moveDate = moveDate;
     estimate.customerMemo = customerMemo;
+    estimate.fromDetail = fromDetail;
+    estimate.toDetail = toDetail;
     return estimate;
   }
 }
