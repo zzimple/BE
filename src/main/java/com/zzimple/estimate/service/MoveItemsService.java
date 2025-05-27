@@ -7,7 +7,7 @@ import com.zzimple.estimate.dto.request.MoveItemsDraftRequest;
 import com.zzimple.estimate.dto.response.MoveItemsDraftResponse;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
-import com.zzimple.global.exception.MoveItemErrorCode;
+import com.zzimple.estimate.exception.MoveItemErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ListOperations;
@@ -35,25 +35,33 @@ public class MoveItemsService {
   private String itemsKey(UUID draftId) { return keyOf(draftId) + ":items"; }
   private String boxKey(UUID draftId)   { return keyOf(draftId) + ":box"; }
   private String leftoverBoxKey(UUID draftId)  { return keyOf(draftId) + ":leftoverBox"; }
+  private String requestNoteKey(UUID draftId)   { return keyOf(draftId) + ":requestNote"; }
 
   // 전체 박스 개수랑, 짐 목록들 가져와서 redis에 저장
   public MoveItemsDraftResponse saveAllMoveItems(UUID draftId, MoveItemsBatchRequest batch) {
     int boxCount = batch.getBoxCount();
     int leftoverBoxCount  = batch.getLeftoverBoxCount();
     List<MoveItemsDraftRequest> items = batch.getItems();
-    log.info("[saveAllMoveItems] draftId={} save {} items with boxCount={} leftoverBoxCount={}",
-        draftId, items.size(), boxCount, leftoverBoxCount);
+    String requestNote = batch.getRequestNote();
+
+    log.info("[saveAllMoveItems] draftId={} save {} items with boxCount={} leftoverBoxCount={}, note={}",
+        draftId, items.size(), boxCount, leftoverBoxCount, requestNote);
 
     // 1) 기존 데이터 삭제
     redisTemplate.delete(itemsKey(draftId));
     redisTemplate.delete(boxKey(draftId));
     redisTemplate.delete(leftoverBoxKey(draftId));
+    redisTemplate.delete(requestNoteKey(draftId));
 
     // 2) 박스 개수 저장
     redisTemplate.opsForValue()
         .set(boxKey(draftId), String.valueOf(boxCount), EXPIRE);
     redisTemplate.opsForValue()
         .set(leftoverBoxKey(draftId), String.valueOf(leftoverBoxCount), EXPIRE);
+
+    // 2-1) 요청 사항 저장
+    redisTemplate.opsForValue()
+        .set(requestNoteKey(draftId), requestNote, EXPIRE);
 
     // 3) 아이템 리스트 저장
     ListOperations<String, String> ops = redisTemplate.opsForList();
@@ -73,6 +81,7 @@ public class MoveItemsService {
     return new MoveItemsDraftResponse(
         boxCount,
         leftoverBoxCount,
+        requestNote,
         dtos
     );
   }
@@ -104,6 +113,10 @@ public class MoveItemsService {
         .map(Integer::parseInt)
         .orElse(0);
 
+    String requestNote = redisTemplate.opsForValue()
+        .get(requestNoteKey(draftId));
+
+
     // 4) 응답 DTO 변환
     List<MoveItemsDraftResponse.MoveItemResponseDto> dtos = saved.stream()
         .map(this::toDto)
@@ -112,6 +125,7 @@ public class MoveItemsService {
     return new MoveItemsDraftResponse(
         boxCount,
         leftoverBoxCount,
+        requestNote,
         dtos
     );
   }
@@ -140,7 +154,6 @@ public class MoveItemsService {
         req.getPurifierType(),
         req.getAcType(),
         req.getSpecialNote(),
-        req.getRequestNote(),
         req.getDetails()
     );
   }
