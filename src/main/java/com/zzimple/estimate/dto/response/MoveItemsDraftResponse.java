@@ -1,5 +1,6 @@
 package com.zzimple.estimate.dto.response;
 
+import com.zzimple.estimate.enums.MoveItemCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -16,6 +17,12 @@ public class MoveItemsDraftResponse {
   @Schema(description = "전체 박스 개수")
   private Integer boxCount;
 
+  @Schema(description = "잔짐 박스 개수")
+  private int leftoverBoxCount;
+
+  @Schema(description = "고객 요청사항 메모")
+  private String requestNote;
+
   @Schema(description = "현재 저장된 짐 항목 리스트")
   private List<MoveItemResponseDto> items;
 
@@ -30,6 +37,9 @@ public class MoveItemsDraftResponse {
 
     @Schema(description = "짐 종류 ID", example = "101")
     private Long itemTypeId;
+
+    @Schema(description = "짐 카테고리 (가전/가구/기타)", example = "APPLIANCE")
+    private MoveItemCategory category;
 
     @Schema(description = "수량", example = "2")
     private int quantity;
@@ -84,9 +94,6 @@ public class MoveItemsDraftResponse {
 
     @Schema(description = "특이사항", example = "분리 필요")
     private String specialNote;
-
-    @Schema(description = "고객 요청사항 메모", example = "엘리베이터 없음")
-    private String requestNote;
 
     @Schema(description = "추가 옵션 정보 (키-값)")
     private Map<String,String> details;
