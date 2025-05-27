@@ -6,7 +6,7 @@ import com.zzimple.estimate.dto.response.MonthlyHolidayPreviewResponse;
 import com.zzimple.estimate.dto.response.HolidaySaveResponse;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
-import com.zzimple.global.exception.HolidayErrorCode;
+import com.zzimple.estimate.exception.HolidayErrorCode;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;

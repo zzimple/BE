@@ -7,7 +7,7 @@ import com.zzimple.estimate.dto.request.AddressWithDetailRequest;
 import com.zzimple.estimate.dto.response.AddressDraftResponse;
 import com.zzimple.estimate.dto.response.AddressFullResponse;
 import com.zzimple.global.config.RedisKeyUtil;
-import com.zzimple.global.exception.AddressErrorCode;
+import com.zzimple.estimate.exception.AddressErrorCode;
 import com.zzimple.global.exception.CustomException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

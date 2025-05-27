@@ -5,7 +5,7 @@ import com.zzimple.estimate.dto.response.MoveOptionTypeResponse;
 import com.zzimple.estimate.enums.MoveOptionType;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
-import com.zzimple.global.exception.MoveErrorCode;
+import com.zzimple.estimate.exception.MoveErrorCode;
 import java.time.Duration;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

@@ -5,7 +5,7 @@ import com.zzimple.estimate.dto.response.MoveTypeResponse;
 import com.zzimple.estimate.enums.MoveType;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
-import com.zzimple.global.exception.MoveErrorCode;
+import com.zzimple.estimate.exception.MoveErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
