@@ -1,7 +1,8 @@
-package com.zzimple.estimate.dto.request;
+package com.zzimple.estimate.guest.dto.request;
 
-import com.zzimple.estimate.enums.BuildingType;
-import com.zzimple.estimate.enums.RoomStructure;
+import com.zzimple.estimate.guest.entity.AddressDetailInfo;
+import com.zzimple.estimate.guest.enums.BuildingType;
+import com.zzimple.estimate.guest.enums.RoomStructure;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,4 +34,26 @@ public class AddressDetailInfoRequest {
 
   @Schema(description = "엘리베이터 여부", example = "true")
   private boolean elevator;
+
+  public AddressDetailInfo toEntity() {
+    return new AddressDetailInfo(
+        this.buildingType,
+        this.roomStructure,
+        this.sizeOption,
+        parseFloor(this.floor),
+        this.hasStairs,
+        this.hasParking,
+        this.elevator
+    );
+  }
+
+  private Integer parseFloor(String floorText) {
+    if (floorText == null)
+      return null;
+    try {
+      return Integer.parseInt(floorText.replaceAll("[^0-9]", ""));
+    } catch (NumberFormatException e) {
+      return null;
+    }
+  }
 }
