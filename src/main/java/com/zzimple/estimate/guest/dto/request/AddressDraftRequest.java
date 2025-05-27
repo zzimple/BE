@@ -1,6 +1,6 @@
-package com.zzimple.estimate.dto.request;
+package com.zzimple.estimate.guest.dto.request;
 
-import com.zzimple.estimate.entity.Address;
+import com.zzimple.estimate.guest.entity.Address;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

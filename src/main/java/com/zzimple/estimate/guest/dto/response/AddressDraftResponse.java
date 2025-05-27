@@ -1,4 +1,4 @@
-package com.zzimple.estimate.dto.response;
+package com.zzimple.estimate.guest.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
