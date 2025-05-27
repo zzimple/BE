@@ -4,5 +4,6 @@ public enum EstimateStatus {
   REQUESTED,
   ACCEPTED,
   REJECTED,
-  CANCELED
+  CANCELED,
+  WAITING
 }
