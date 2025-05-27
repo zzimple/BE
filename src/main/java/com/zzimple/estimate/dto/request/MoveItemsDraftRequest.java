@@ -1,5 +1,6 @@
 package com.zzimple.estimate.dto.request;
 
+import com.zzimple.estimate.enums.MoveItemCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +18,9 @@ public class MoveItemsDraftRequest {
 
   @Schema(description = "짐 종류 ID", example = "1001")
   private Integer itemTypeId;
+
+  @Schema(description = "짐 카테고리 (가전/가구/기타)", example = "APPLIANCE")
+  private MoveItemCategory category;
 
   @Schema(description = "수량", example = "2")
   private int quantity;
