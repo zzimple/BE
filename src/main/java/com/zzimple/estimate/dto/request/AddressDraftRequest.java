@@ -32,8 +32,19 @@ public class AddressDraftRequest {
   @Schema(description = "읍면동명", example = "역삼동")
   private String emdNm;
 
-  @Schema(description = "법정리명", example = "")
+  @Schema(description = "법정리명")
   private String liNm;
 
-
+  public Address toEntity() {
+    return new Address(
+        this.getRoadFullAddr(),
+        this.getRoadAddr(),
+        this.getZipNo(),
+        this.getAddrDetail(),
+        this.getBuldMgtNo(),
+        this.getBuldSlno(),
+        this.getEmdNm(),
+        this.getLiNm()
+    );
+  }
 }
