@@ -1,4 +1,4 @@
-package com.zzimple.estimate.entity;
+package com.zzimple.estimate.guest.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
