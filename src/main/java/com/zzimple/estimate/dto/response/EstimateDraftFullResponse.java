@@ -18,5 +18,5 @@ public class EstimateDraftFullResponse {
   private HolidaySaveResponse holiday;
   private MoveTypeResponse moveType;
   private MoveItemsDraftResponse moveItems;
-  private MoveOptionTypeResponse smallMoveOption;
+  private MoveOptionTypeResponse moveOption;
 }
