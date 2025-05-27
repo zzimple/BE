@@ -30,4 +30,7 @@ public class AddressDetailInfoRequest {
 
   @Schema(description = "주차 가능 여부", example = "true")
   private boolean hasParking;
+
+  @Schema(description = "엘리베이터 여부", example = "true")
+  private boolean elevator;
 }
