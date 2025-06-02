@@ -25,7 +25,8 @@ public enum UserErrorCode implements BaseErrorCode {
   TOKEN_EXPIRED("U007", "토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
 
   // 기타
-  USER_NOT_FOUND("U008", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+  USER_NOT_FOUND("U008", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  INVALID_INPUT("U009", "입력값이 유효하지 않습니다.", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final String message;
