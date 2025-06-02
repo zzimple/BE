@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/owner")
+@RequestMapping("/owner")
 @RequiredArgsConstructor
 
 public class OwnerController {
@@ -51,6 +51,9 @@ public class OwnerController {
               password: 비밀번호  \n
               userName: 사용자 이름  \n
               phoneNumber: 전화번호  \n
+              storeName: 가게 이름  \n
+              roadFullAddr: 가게 도로명 주소  \n
+              zipNo: 우편번호 \n
               email: 이메일(선택) \n
               insured : 보험가입 여부 \n
               
