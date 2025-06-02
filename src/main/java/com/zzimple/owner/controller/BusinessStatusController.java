@@ -1,7 +1,7 @@
 package com.zzimple.owner.controller;
 
 import com.zzimple.global.dto.BaseResponse;
-import com.zzimple.global.exception.BusinessErrorCode;
+import com.zzimple.owner.exception.BusinessErrorCode;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.owner.dto.request.BusinessStatusRequest;
 import com.zzimple.owner.dto.response.BusinessStatusCheckResponse;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/owner/business")
+@RequestMapping("/owner/business")
 @RequiredArgsConstructor
 public class BusinessStatusController {
 
@@ -47,7 +47,7 @@ public class BusinessStatusController {
     if (result.isValid()) {
       String redisKey = "biz:" + request.getB_no();
       redisTemplate.opsForValue()
-          .set(redisKey, "Y", Duration.ofMinutes(5));
+          .set(redisKey, "Y", Duration.ofHours(3));
     }
 
     return ResponseEntity.ok(BaseResponse.success("사업자 상태 조회 결과", result));
