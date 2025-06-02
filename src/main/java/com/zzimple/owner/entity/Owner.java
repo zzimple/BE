@@ -38,4 +38,16 @@ public class Owner extends BaseTimeEntity {
 
   @Column(name = "status")
   private String status;
+
+  @Column(name = "road_full_addr", nullable = false)
+  private String roadFullAddr; // 전체 도로명 주소 (예: 서울 강남구 테헤란로 123)
+
+  @Column(name = "road_addr", nullable = false)
+  private String roadAddrPart1;        // 도로명 주소 요약 (예: 테헤란로)
+
+  @Column(name = "addr_detail")
+  private String addrDetail; // 상세 주소 (예: 101동 203호)
+
+  @Column(name = "zip_no", nullable = false)
+  private String zipNo; // 우편번호
 }
