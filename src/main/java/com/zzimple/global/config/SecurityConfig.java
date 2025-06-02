@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -22,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Order(1)
 public class SecurityConfig {
 
   private final CorsConfig corsConfig;
@@ -65,15 +67,22 @@ public class SecurityConfig {
                 ).hasRole("DEVELOPER")
 
                 // 인증 관련 요청 허용
-                .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
+                .requestMatchers("/auth/**", "/oauth2/**").permitAll()
 
-                .requestMatchers("/api/owner/**", "/api/users/**", "/api/sms/**").permitAll()
+                .requestMatchers("/owner/**", "/users/**", "/sms/**").permitAll()
+
+
+                // 개발 할 때만 풀어두기
+//                .requestMatchers("/estimates/draft/**").permitAll()
+
+                .requestMatchers("/juso/**").permitAll()
+
 
                 // 직원 전용 API
-                .requestMatchers("/api/staff/request").hasRole("STAFF")
+                .requestMatchers("/staff/request").hasRole("STAFF")
 
                 // 사장 전용 API
-                .requestMatchers("/api/staff/approve").hasRole("OWNER")
+                .requestMatchers("/staff/approve", "/estimates/owner/**").hasRole("OWNER")
 
                 // 고객 전용 API
                 .requestMatchers("/estimates/draft/**").hasRole("GUEST")
