@@ -1,13 +1,13 @@
-package com.zzimple.estimate.service;
+package com.zzimple.estimate.guest.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zzimple.estimate.dto.request.AddressDraftSaveRequest;
-import com.zzimple.estimate.dto.request.AddressWithDetailRequest;
-import com.zzimple.estimate.dto.response.AddressDraftResponse;
-import com.zzimple.estimate.dto.response.AddressFullResponse;
+import com.zzimple.estimate.guest.dto.request.AddressDraftSaveRequest;
+import com.zzimple.estimate.guest.dto.request.AddressWithDetailRequest;
+import com.zzimple.estimate.guest.dto.response.AddressDraftResponse;
+import com.zzimple.estimate.guest.dto.response.AddressFullResponse;
 import com.zzimple.global.config.RedisKeyUtil;
-import com.zzimple.estimate.exception.AddressErrorCode;
+import com.zzimple.estimate.guest.exception.AddressErrorCode;
 import com.zzimple.global.exception.CustomException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class AddressService {
   // JSON 파싱을 위한 ObjectMapper
   private final ObjectMapper objectMapper;
 
-  private static final Duration TTL = Duration.ofMinutes(30);
+  private static final Duration TTL = Duration.ofHours(1);
 
   public AddressDraftResponse saveAddressDraft(UUID draftId, AddressDraftSaveRequest request) {
     log.info("[AddressDraft] 임시 주소 저장 시작 - userId: {}", draftId);
@@ -49,7 +49,7 @@ public class AddressService {
       log.debug("[AddressDraft] 저장된 데이터: {}", json);
 
       return AddressDraftResponse.builder()
-          .roadAddr(from.getAddress().getRoadAddr())
+          .roadAddr(from.getAddress().getRoadAddrPart1())
           .build();
     } catch (JsonProcessingException e) {
       log.warn("[AddressDraft] JSON 직렬화 실패 - userId: {}, 이유: {}", draftId, e.getMessage());
