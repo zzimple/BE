@@ -2,7 +2,7 @@ package com.zzimple.staff.service;
 
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.GlobalErrorCode;
-import com.zzimple.global.exception.StaffErrorCode;
+import com.zzimple.staff.exception.StaffErrorCode;
 import com.zzimple.staff.dto.request.StaffsendApprovalRequest;
 import com.zzimple.staff.dto.response.StaffsendApprovalResponse;
 import com.zzimple.staff.entity.Staff;
