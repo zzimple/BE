@@ -14,7 +14,7 @@ public class Address {
   private String roadFullAddr;    // 전체 도로명 주소 (예: 서울 강남구 테헤란로 123)
 
   @Column(name = "road_addr", nullable = false)
-  private String roadAddr;        // 도로명 주소 요약 (예: 테헤란로)
+  private String roadAddrPart1;        // 도로명 주소 요약 (예: 테헤란로)
 
   @Column(name = "zip_no", nullable = false)
   private String zipNo;         // 우편번호
@@ -35,10 +35,10 @@ public class Address {
   private String liNm;
 
   // 그냥 값 보관용 객체라서 생성자 씀.
-  public Address(String roadFullAddr, String roadAddr, String zipNo, String addrDetail,
+  public Address(String roadFullAddr, String roadAddrPart1, String zipNo, String addrDetail,
       String buldMgtNo, Number buldSlno, String emdNm, String liNm) {
     this.roadFullAddr = roadFullAddr;
-    this.roadAddr = roadAddr;
+    this.roadAddrPart1 = roadAddrPart1;
     this.zipNo = zipNo;
     this.addrDetail = addrDetail;
     this.buldMgtNo = buldMgtNo;
