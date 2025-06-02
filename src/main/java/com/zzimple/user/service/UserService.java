@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -53,8 +54,20 @@ public class UserService {
     }
 
     try {
+
+      // ✅ 추가 - 필수 필드 유효성 검증
+      if (!StringUtils.hasText(request.getLoginId())) {
+        throw new CustomException(UserErrorCode.INVALID_INPUT);
+      }
+
+      if (!StringUtils.hasText(request.getPhoneNumber())) {
+        throw new CustomException(UserErrorCode.INVALID_INPUT);
+      }
+
       // 2. 비밀번호 암호화
       String encodedPassword = passwordEncoder.encode(request.getPassword());
+
+      String email = StringUtils.hasText(request.getEmail()) ? request.getEmail() : null;
 
       // 3. 사용자 엔티티 생성
       User user =
@@ -63,7 +76,7 @@ public class UserService {
               .phoneNumber(request.getPhoneNumber())
               .loginId(request.getLoginId())
               .password(encodedPassword)
-              .email(request.getEmail())
+              .email(email)
               .role(request.getUserRole())
               .build();
 
