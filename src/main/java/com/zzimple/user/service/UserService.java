@@ -2,7 +2,7 @@ package com.zzimple.user.service;
 
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.GlobalErrorCode;
-import com.zzimple.global.exception.UserErrorCode;
+import com.zzimple.user.exception.UserErrorCode;
 import com.zzimple.global.jwt.JwtUtil;
 import com.zzimple.global.sms.service.SmsService;
 import com.zzimple.user.dto.request.UserLoginIdCheckRequest;
