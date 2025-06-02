@@ -15,7 +15,7 @@ public class AddressDraftRequest {
   private String roadFullAddr;
 
   @Schema(description = "도로명 주소", example = "서울특별시 강남구 테헤란로 223")
-  private String roadAddr;
+  private String roadAddrPart1;
 
   @Schema(description = "상세 주소", example = "20층")
   private String addrDetail;
@@ -38,7 +38,7 @@ public class AddressDraftRequest {
   public Address toEntity() {
     return new Address(
         this.getRoadFullAddr(),
-        this.getRoadAddr(),
+        this.getRoadAddrPart1(),
         this.getZipNo(),
         this.getAddrDetail(),
         this.getBuldMgtNo(),
