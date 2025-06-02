@@ -17,16 +17,24 @@ import lombok.Setter;
 @Setter
 @Getter
 @NoArgsConstructor
-@Table(name = "estimate")
+@Table(
+    name = "estimate",
+    indexes = {
+        @Index(name = "idx_estimate_user_id", columnList = "user_id"),
+        @Index(name = "idx_estimate_store_id", columnList = "store_id")
+    }
+)
 public class Estimate extends BaseTimeEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long estimate_No;
+  @Column(name = "estimate_no", nullable = false)
+
+  private Long estimateNo;
 
   @Column(nullable = false)
-  private Long customerId;
+  private Long userId;
 
-  private Long ownerId;
+  private Long storeId;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -43,7 +51,7 @@ public class Estimate extends BaseTimeEntity {
   @Embedded
   @AttributeOverrides({
       @AttributeOverride(name = "roadFullAddr", column = @Column(name = "from_road_full_addr")),
-      @AttributeOverride(name = "roadAddr", column = @Column(name = "from_road_addr")),
+      @AttributeOverride(name = "roadAddrPart1", column = @Column(name = "from_road_addr_part1")),
       @AttributeOverride(name = "zipNo", column = @Column(name = "from_zip_no")),
       @AttributeOverride(name = "addrDetail", column = @Column(name = "from_addr_detail")),
       @AttributeOverride(name = "buldMgtNo", column = @Column(name = "from_buld_mgt_no")),
@@ -56,7 +64,7 @@ public class Estimate extends BaseTimeEntity {
   @Embedded
   @AttributeOverrides({
       @AttributeOverride(name = "roadFullAddr", column = @Column(name = "to_road_full_addr")),
-      @AttributeOverride(name = "roadAddr", column = @Column(name = "to_road_addr")),
+      @AttributeOverride(name = "roadAddrPart1", column = @Column(name = "to_road_addr_part1")),
       @AttributeOverride(name = "zipNo", column = @Column(name = "to_zip_no")),
       @AttributeOverride(name = "addrDetail", column = @Column(name = "to_addr_detail")),
       @AttributeOverride(name = "buldMgtNo", column = @Column(name = "to_buld_mgt_no")),
@@ -99,9 +107,28 @@ public class Estimate extends BaseTimeEntity {
   @Column(columnDefinition = "TEXT")
   private String customerMemo;
 
+
+  // 사장님
+  private Integer truckCount;
+
+  @Column(length = 1000)
+  private String ownerMessage;
+
+  // ✅ 추가: 공휴일/손없는날/주말 여부
+  @Column(nullable = false)
+  private Boolean isHoliday;
+
+  @Column(nullable = false)
+  private Boolean isGoodDay;
+
+  @Column(nullable = false)
+  private Boolean isWeekend;
+
+  private Integer totalPrice;
+
   // 정적 팩토리 메서드
   public static Estimate of(
-      Long customerId,
+      Long userId,
       MoveType moveType,
       MoveOptionType optionType,
       LocalDateTime scheduledAt,
@@ -110,10 +137,13 @@ public class Estimate extends BaseTimeEntity {
       String moveDate,
       String customerMemo,
       AddressDetailInfo fromDetail,
-      AddressDetailInfo toDetail
+      AddressDetailInfo toDetail,
+      Boolean isGoodDay,      // ✅ 추가
+      Boolean isHoliday,      // ✅ 추가
+      Boolean isWeekend       // ✅ 추가
   ) {
     Estimate estimate = new Estimate();
-    estimate.customerId = customerId;
+    estimate.userId = userId;
     estimate.moveType = moveType;
     estimate.optionType = optionType;
     estimate.scheduledAt = scheduledAt;
@@ -123,6 +153,9 @@ public class Estimate extends BaseTimeEntity {
     estimate.customerMemo = customerMemo;
     estimate.fromDetail = fromDetail;
     estimate.toDetail = toDetail;
+    estimate.isGoodDay = isGoodDay;      // ✅ 필드 값 세팅
+    estimate.isHoliday = isHoliday;
+    estimate.isWeekend = isWeekend;
     return estimate;
   }
 }
