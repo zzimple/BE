@@ -1,7 +1,7 @@
 package com.zzimple.owner.controller;
 
 import com.zzimple.global.dto.BaseResponse;
-import com.zzimple.global.exception.BusinessErrorCode;
+import com.zzimple.owner.exception.BusinessErrorCode;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.owner.dto.request.BusinessStatusRequest;
 import com.zzimple.owner.dto.response.BusinessStatusCheckResponse;
