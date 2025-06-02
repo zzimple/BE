@@ -1,4 +1,4 @@
-package com.zzimple.estimate.dto.request;
+package com.zzimple.estimate.guest.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;

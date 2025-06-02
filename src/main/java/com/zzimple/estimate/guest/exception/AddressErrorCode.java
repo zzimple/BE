@@ -1,4 +1,4 @@
-package com.zzimple.estimate.exception;
+package com.zzimple.estimate.guest.exception;
 
 import com.zzimple.global.exception.model.BaseErrorCode;
 import lombok.AllArgsConstructor;
