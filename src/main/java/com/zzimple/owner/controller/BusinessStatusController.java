@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/owner/business")
+@RequestMapping("/owner/business")
 @RequiredArgsConstructor
 public class BusinessStatusController {
 
