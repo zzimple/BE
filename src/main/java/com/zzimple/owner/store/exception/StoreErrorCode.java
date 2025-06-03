@@ -13,5 +13,5 @@ public enum StoreErrorCode implements BaseErrorCode {
 
   private final String code;
   private final String message;
-  private final HttpStatus httpStatus;
+  private final HttpStatus status;
 }
