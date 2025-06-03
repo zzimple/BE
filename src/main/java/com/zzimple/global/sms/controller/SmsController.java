@@ -14,7 +14,7 @@ import jakarta.validation.Valid;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/sms")
+@RequestMapping("/sms")
 public class SmsController {
 
   private final SmsService smsService;
@@ -43,7 +43,7 @@ public class SmsController {
            """)
   @PostMapping("/signup-code")
   public BaseResponse<SmsResponse> sendSignupCode(@RequestBody @Valid SignupCodeRequest request) {
-    SmsResponse response = smsService.sendSignupCode(request.getMsgTo());
+    SmsResponse response = smsService.sendSignupCode(request.getPhone());
     return BaseResponse.success("인증번호가 전송되었습니다.", response);
   }
 

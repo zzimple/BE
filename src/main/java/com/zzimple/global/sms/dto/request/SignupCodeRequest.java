@@ -11,5 +11,5 @@ import lombok.Setter;
 public class SignupCodeRequest {
   @NotBlank
   @Schema(description = "수신번호", example = "010-0000-0000")
-  private String msgTo;
+  private String phone;
 }

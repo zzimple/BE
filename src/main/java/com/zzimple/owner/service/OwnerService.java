@@ -1,10 +1,9 @@
 package com.zzimple.owner.service;
 
-import com.zzimple.global.exception.BusinessErrorCode;
+import com.zzimple.owner.exception.BusinessErrorCode;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.GlobalErrorCode;
 import com.zzimple.global.sms.service.SmsService;
-import com.zzimple.global.sms.service.util.SmsCertificationUtil;
 import com.zzimple.owner.dto.request.OwnerLoginIdCheckRequest;
 import com.zzimple.owner.dto.request.OwnerSignUpRequest;
 import com.zzimple.owner.dto.response.OwnerLoginIdCheckResponse;
@@ -12,13 +11,13 @@ import com.zzimple.owner.dto.response.OwnerSignUpResponse;
 import com.zzimple.owner.entity.Owner;
 import com.zzimple.owner.repository.redis.BusinessRedisRepository;
 import com.zzimple.owner.repository.OwnerRepository;
+import com.zzimple.owner.store.entity.Store;
+import com.zzimple.owner.store.repository.StoreRepository;
 import com.zzimple.user.entity.User;
 import com.zzimple.user.enums.UserRole;
 import com.zzimple.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +31,8 @@ public class OwnerService {
   private final PasswordEncoder passwordEncoder;
   private final UserRepository userRepository;
   private final BusinessRedisRepository businessRedisRepository;
-  private final SmsCertificationUtil smsCertificationUtil;
+  private final StoreRepository storeRepository;
 
-  private final RedisTemplate<String, String> redisTemplate;
   private final SmsService smsService;
 
   public OwnerLoginIdCheckResponse checkLoginIdDuplicate(OwnerLoginIdCheckRequest request) {
@@ -64,10 +62,10 @@ public class OwnerService {
     log.info("[회원가입] 사업자번호 인증정보 삭제 완료 - b_no: {}", request.getB_no());
 
     try {
-      // 2. 비밀번호 암호화
+      // 3. 비밀번호 암호화
       String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-      // 3) User 엔티티 생성 (role=OWNER 로 고정)
+      // 4. User 엔티티 생성 (role=OWNER 로 고정)
       User base = User.builder()
           .loginId(request.getB_no())
           .password(encodedPassword)
@@ -78,17 +76,29 @@ public class OwnerService {
           .build();
       userRepository.save(base);
 
-      // 3. Owner 저장
+      // 5. Owner 저장
       Owner owner = Owner.builder()
           .userId(base.getId())
           .businessNumber(request.getB_no())
           .insured(request.getInsured())
           .status("계속사업자")
+          .roadFullAddr(request.getRoadFullAddr())
+          .roadAddrPart1(request.getRoadAddrPart1())
+          .addrDetail(request.getAddrDetail())
+          .zipNo(request.getZipNo())
           .build();
       ownerRepository.save(owner);
 
-      log.info("[회원가입] 회원가입 성공 - 사업자번호: {}, 이름: {}", base.getLoginId(),
-          base.getUserName());
+      // 6. Store 저장 - 가게 이름과 전체 도로명 주소 저장
+      Store store = Store.builder()
+          .ownerId(owner.getId())
+          .name(request.getStoreName())
+          .address(request.getRoadFullAddr())
+          .build();
+      storeRepository.save(store);
+
+      log.info("[회원가입] 회원가입 및 가게 등록 성공 - 사업자번호: {}, 이름: {}, 가게: {}",
+          base.getLoginId(), base.getUserName(), store.getName());
 
       return OwnerSignUpResponse.builder()
           .isSuccess(true)

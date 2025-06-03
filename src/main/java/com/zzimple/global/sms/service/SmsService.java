@@ -33,7 +33,7 @@ public class SmsService {
 
   private final RedisTemplate<String, String> redisTemplate;
   // Redis 저장 시간
-  private static final long TTL_MINUTES = 10;
+  private static final long TTL_MINUTES = 60;
 
   // WebClient는 throw를 던지지 못해서 Webflux로 처리
   private static <T> Mono<T> mapError(SmsErrorCode code) {

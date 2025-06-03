@@ -14,7 +14,12 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "owners", indexes = @Index(name = "idx_owner_user_id", columnList = "user_id"))
+@Table(
+    name = "owners",
+    indexes = {
+        @Index(name = "idx_owner_user_id", columnList = "user_id"),
+        @Index(name = "idx_owner_store_id", columnList = "store_id")
+    })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,6 +34,8 @@ public class Owner extends BaseTimeEntity {
   @Column(name = "user_id", nullable = false, unique = true)
   private Long userId;
 
+  private Long storeId;
+
   @Column(name = "business_number", nullable = false, unique = true)
   private String businessNumber;
 
@@ -38,4 +45,16 @@ public class Owner extends BaseTimeEntity {
 
   @Column(name = "status")
   private String status;
+
+  @Column(name = "road_full_addr", nullable = false)
+  private String roadFullAddr; // 전체 도로명 주소 (예: 서울 강남구 테헤란로 123)
+
+  @Column(name = "road_addr", nullable = false)
+  private String roadAddrPart1;        // 도로명 주소 요약 (예: 테헤란로)
+
+  @Column(name = "addr_detail")
+  private String addrDetail; // 상세 주소 (예: 101동 203호)
+
+  @Column(name = "zip_no", nullable = false)
+  private String zipNo; // 우편번호
 }
