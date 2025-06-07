@@ -17,19 +17,19 @@ public class MoveItemsDraftRequest {
   @Schema(description = "짐 종류 ID", example = "1001")
   private Long itemTypeId;
 
-  @Schema(description = "짐 종류 이름", example = "냉장고")
-  private String itemTypeName;
+//  @Schema(description = "짐 종류 이름", example = "냉장고")
+//  private String itemTypeName;
 
-  @Schema(description = "엔트리 고유 ID (생성 시 null → 서버에서 UUID 발급)", example = "1")
-  private String entryId;
+//  @Schema(description = "엔트리 고유 ID (생성 시 null → 서버에서 UUID 발급)", example = 1)
+//  private String entryId;
 
-  @Schema(description = "짐 카테고리 (가전/가구/기타)", example = "APPLIANCE")
-  private MoveItemCategory category;
+//  @Schema(description = "짐 카테고리 (가전/가구/기타)", example = "APPLIANCE")
+//  private MoveItemCategory category;
 
   @Schema(description = "수량", example = "2")
   private int quantity;
 
-  @Schema(description = "종류", example = "쇼파 종류 등등..")
+  @Schema(description = "종류", example = "일반")
   private String type;
 
   // 크기 관련
