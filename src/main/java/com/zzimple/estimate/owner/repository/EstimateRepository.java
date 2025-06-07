@@ -1,6 +1,7 @@
 package com.zzimple.estimate.owner.repository;
 
 import com.zzimple.estimate.guest.entity.Estimate;
+import com.zzimple.estimate.guest.enums.EstimateStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -29,7 +30,7 @@ public interface EstimateRepository extends JpaRepository<Estimate, Long> {
          AND (:toRegion1   IS NULL OR SUBSTRING_INDEX(to_road_full_addr, ' ', 1)    = :toRegion1)
          AND (:toRegion2   IS NULL OR SUBSTRING_INDEX(                                     
                SUBSTRING_INDEX(to_road_full_addr, ' ', 2), ' ', -1)   = :toRegion2)
-     ORDER BY scheduled_at DESC
+     ORDER BY move_time DESC
     """,
       countQuery = """
       SELECT COUNT(*)
@@ -61,4 +62,6 @@ public interface EstimateRepository extends JpaRepository<Estimate, Long> {
       @Param("toRegion2")   String toRegion2,
       Pageable pageable
   );
+
+  Page<Estimate> findByUserIdAndStatus(Long userId, EstimateStatus status, Pageable pageable);
 }
