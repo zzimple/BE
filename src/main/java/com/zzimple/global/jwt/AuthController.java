@@ -1,6 +1,13 @@
 package com.zzimple.global.jwt;
 
+import com.zzimple.global.exception.CustomException;
+import com.zzimple.owner.entity.Owner;
+import com.zzimple.owner.exception.OwnerErrorCode;
+import com.zzimple.owner.repository.OwnerRepository;
+import com.zzimple.owner.store.entity.Store;
+import com.zzimple.owner.store.repository.StoreRepository;
 import com.zzimple.user.entity.User;
+import com.zzimple.user.enums.UserRole;
 import com.zzimple.user.repository.UserRepository;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthController {
   private final JwtUtil jwtUtil;
   private final UserRepository userRepository;
+  private final OwnerRepository ownerRepository;
+  private final StoreRepository storeRepository;
 
   @Operation(
       summary = "토큰 필요 O 보낸 토큰이 만료되었을 경우 재발급",
@@ -66,12 +75,26 @@ public class AuthController {
           .findByLoginId(loginId)
           .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
+      if (!token.equals(user.getRefreshToken())) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(new ErrorResponse("변조된 Refresh Token입니다."));
+      }
+
       List<String> roles = Collections.singletonList(user.getRole().name());
+      String newAccessToken;
 
-      // 새로운 Access Token 발급
-      String newAccessToken = jwtUtil.createAccessToken(loginId, roles);
+      if (user.getRole() == UserRole.OWNER) {
+        Owner owner = ownerRepository.findByUserId(user.getId())
+            .orElseThrow(() -> new CustomException(OwnerErrorCode.OWNER_NOT_FOUND));
+        Store store = storeRepository.findByOwnerId(owner.getId())
+            .orElseThrow(() -> new CustomException(OwnerErrorCode.STORE_NOT_FOUND));
+
+        newAccessToken = jwtUtil.createAccessToken(loginId, roles, store.getId());
+      } else {
+        newAccessToken = jwtUtil.createAccessToken(loginId, roles); // 고침
+      }
+
       return ResponseEntity.ok(new TokenResponse(newAccessToken));
-
     }
     // refresh Token 파싱 실패 (만료된 토큰)
     catch (ExpiredJwtException e) {
