@@ -17,6 +17,9 @@ public class SaveItemBasePriceResponse {
   @Schema(description = "짐 종류 ID", example = "1001")
   private Long itemTypeId;
 
+  @Schema(description = "짐 이름", example = "침대")
+  private String itemTypeName;
+
   @Schema(description = "기본 금액", example = "80000")
   private int basePrice;
 }
