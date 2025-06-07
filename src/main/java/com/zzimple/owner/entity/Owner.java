@@ -34,7 +34,7 @@ public class Owner extends BaseTimeEntity {
   @Column(name = "user_id", nullable = false, unique = true)
   private Long userId;
 
-  private Long storeId;
+//  private Long storeId;
 
   @Column(name = "business_number", nullable = false, unique = true)
   private String businessNumber;
