@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "staffs", indexes = {
-    @Index(name = "idx_staff_user_id", columnList = "staff_id"),
+    @Index(name = "idx_staff_user_id", columnList = "user_id"),
     @Index(name = "idx_staff_owner_id", columnList = "owner_id")
 })
 @Getter
@@ -32,8 +32,8 @@ public class Staff extends BaseTimeEntity {
   @Column(name = "id", nullable = false, unique = true)
   private Long id;
 
-  @Column(name = "staff_id", nullable = false)
-  private Long staffId;
+  @Column(name = "user_id", nullable = false)
+  private Long userId;
 
   @Column(name = "owner_id", nullable = false)
   private Long ownerId;
