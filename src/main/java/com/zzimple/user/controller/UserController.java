@@ -9,6 +9,7 @@ import com.zzimple.user.dto.response.LoginResponse;
 import com.zzimple.user.dto.response.SignUpResponse;
 import com.zzimple.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class UserController {
   public ResponseEntity<BaseResponse<LoginIdCheckResponse>> checkLoginIdDuplicate(@RequestBody @Valid UserLoginIdCheckRequest request) {
 
     LoginIdCheckResponse result = userService.checkLoginIdDuplicate(request);
+
     String message = result.isDuplicate() ? "이미 사용 중인 아이디입니다." : "사용 가능한 아이디입니다.";
 
     return ResponseEntity.ok(BaseResponse.success(message, result));
@@ -81,8 +83,8 @@ public class UserController {
           isSuccess: 로그인 성공 여부  \n
           """)
   @PostMapping("/login")
-  public ResponseEntity<BaseResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest loginRequest) {
-    LoginResponse result = userService.login(loginRequest);
+  public ResponseEntity<BaseResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response ) {
+    LoginResponse result = userService.login(request, response);
     return ResponseEntity.ok(BaseResponse.success("로그인에 성공하였습니다.", result));
   }
 }
