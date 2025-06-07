@@ -32,7 +32,7 @@ public class JwtUtil {
     return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
   }
 
-  // Access Token 발급 부분
+  // 일반 사용자용 storeId 없는 버전
   public String createAccessToken(String loginId, List<String> roles) {
     Date now = new Date();
     Date expireTime = new Date(now.getTime() + ACCESS_TOKEN_EXPIRE_TIME);
@@ -41,6 +41,22 @@ public class JwtUtil {
     return Jwts.builder()
         .setSubject(loginId)
         .claim("roles", roles)
+        .setIssuedAt(now)
+        .setExpiration(expireTime)
+        .signWith(key, SignatureAlgorithm.HS256)
+        .compact();
+  }
+
+  // Access Token 발급 부분 - 사장
+  public String createAccessToken(String loginId, List<String> roles, Long storeId) {
+    Date now = new Date();
+    Date expireTime = new Date(now.getTime() + ACCESS_TOKEN_EXPIRE_TIME);
+    Key key = getSigningKey();
+
+    return Jwts.builder()
+        .setSubject(loginId)
+        .claim("roles", roles)
+        .claim("storeId", storeId)
         .setIssuedAt(new Date())
         .setExpiration(expireTime)
         .signWith(key, SignatureAlgorithm.HS256)
@@ -59,6 +75,10 @@ public class JwtUtil {
         .setExpiration(expireTime)
         .signWith(key, SignatureAlgorithm.HS256)
         .compact();
+  }
+
+  public long getRefreshTokenExpirySeconds() {
+    return TimeUnit.MILLISECONDS.toSeconds(REFRESH_TOKEN_EXPIRE_TIME);
   }
 
   // 토큰 검증 부분
@@ -91,6 +111,33 @@ public class JwtUtil {
   public String extractLoginId(String token) {
     return getAllClaimsFromToken(token).getSubject();
   }
+
+  // 토큰에서 storeId 추출
+  public Long extractStoreId(String token) {
+    Claims claims = getAllClaimsFromToken(token);
+    Object storeId = claims.get("storeId");
+
+    if (storeId == null) {
+      return null;
+    }
+
+    if (storeId instanceof Integer) {
+      return ((Integer) storeId).longValue();
+    } else if (storeId instanceof Long) {
+      return (Long) storeId;
+    } else if (storeId instanceof String) {
+      try {
+        return Long.parseLong((String) storeId);
+      } catch (NumberFormatException e) {
+        log.warn("storeId 파싱 실패: {}", storeId);
+        return null;
+      }
+    } else {
+      log.warn("예상치 못한 storeId 타입: {}", storeId.getClass());
+      return null;
+    }
+  }
+
 
   // 토큰에서 만료 시간 추출
   public Date extractExpiration(String token) {
