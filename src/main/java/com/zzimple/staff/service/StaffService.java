@@ -2,6 +2,7 @@ package com.zzimple.staff.service;
 
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.GlobalErrorCode;
+import com.zzimple.staff.dto.response.StaffListResponse;
 import com.zzimple.staff.exception.StaffErrorCode;
 import com.zzimple.staff.dto.request.StaffsendApprovalRequest;
 import com.zzimple.staff.dto.response.StaffsendApprovalResponse;
@@ -11,6 +12,7 @@ import com.zzimple.staff.repository.StaffRepository;
 import com.zzimple.user.entity.User;
 import com.zzimple.user.enums.UserRole;
 import com.zzimple.user.repository.UserRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,13 +28,13 @@ public class StaffService {
 
   // 사장님께 승인 요청
   @Transactional
-  public StaffsendApprovalResponse requestApproval(Long staffId, StaffsendApprovalRequest request) {
+  public StaffsendApprovalResponse requestApproval(Long userId, StaffsendApprovalRequest request) {
     // 실제 유저를 조회하여 STAFF 권한 확인
-    User user = userRepository.findById(staffId)
+    User user = userRepository.findById(userId)
         .orElseThrow(() -> new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND));
 
     if (user.getRole() != UserRole.STAFF) {
-      log.warn("[승인 요청 실패] STAFF 권한 아님 - userId: {}", staffId);
+      log.warn("[승인 요청 실패] STAFF 권한 아님 - userId: {}", userId);
       throw new CustomException(StaffErrorCode.INVALID_STAFF_ROLE);
     }
 
@@ -50,31 +52,31 @@ public class StaffService {
     }
 
     // 이미 요청된 관계
-    if (staffRepository.existsByStaffIdAndOwnerId(staffId, owner.getId())) {
-      log.warn("[승인 요청 실패] 이미 요청된 관계 - staffId: {}, ownerId: {}", staffId, owner.getId());
+    if (staffRepository.existsByUserIdAndOwnerId(userId, owner.getId())) {
+      log.warn("[승인 요청 실패] 이미 요청된 관계 - staffId: {}, ownerId: {}", userId, owner.getId());
       throw new CustomException(StaffErrorCode.APPROVAL_ALREADY_REQUESTED);
     }
 
     // staff 엔티티
     Staff staff = Staff.builder()
-        .staffId(staffId)
+        .userId(userId)
         .ownerId(owner.getId())
         .status(Status.PENDING)
         .build();
 
     staffRepository.save(staff);
 
-    log.info("[승인 요청 성공] 요청 완료 - staffId: {}, ownerId: {}", staffId, owner.getId());
+    log.info("[승인 요청 성공] 요청 완료 - staffId: {}, ownerId: {}", userId, owner.getId());
 
     return new StaffsendApprovalResponse(true);
   }
 
   // 사장님 승인 메소드
   @Transactional
-  public Status approveStaff(Long staffId, Status status, Long ownerId) {
-    Staff staff = staffRepository.findByStaffId(staffId)
+  public Status approveStaff(Long userId, Status status, Long ownerId) {
+    Staff staff = staffRepository.findByUserId(userId)
         .orElseThrow(() -> {
-          log.warn("[승인 실패] 존재하지 않는 직원 - staffId: {}", staffId);
+          log.warn("[승인 실패] 존재하지 않는 직원 - staffId: {}", userId);
           return new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND);
         });
 
@@ -84,7 +86,7 @@ public class StaffService {
     }
 
     if (status == Status.REJECTED) {
-      log.info("[승인 처리] 요청 거절 - staffId: {}", staffId);
+      log.info("[승인 처리] 요청 거절 - staffId: {}", userId);
       staffRepository.delete(staff);
       return Status.REJECTED;
     }
@@ -92,7 +94,20 @@ public class StaffService {
     staff.setStatus(Status.APPROVED);
     staffRepository.save(staff);
 
-    log.info("[승인 처리] 요청 승인 완료 - staffId: {}", staffId);
+    log.info("[승인 처리] 요청 승인 완료 - staffId: {}", userId);
     return Status.APPROVED;
   }
+
+  public List<StaffListResponse> getStaffListByOwner(Long ownerId) {
+    List<Staff> staffList = staffRepository.findByOwnerId(ownerId);
+
+    return staffList.stream()
+        .map(staff -> {
+          User user = userRepository.findById(staff.getUserId())
+              .orElseThrow(() -> new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+          return StaffListResponse.from(staff, user);
+        })
+        .toList();
+  }
+
 }
