@@ -9,12 +9,15 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum MoveItemErrorCode implements BaseErrorCode {
 
-  JSON_PARSE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "M001", "짐 항목 JSON 파싱 실패"),
-  REDIS_SAVE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "M002", "Redis 저장 실패"),
-  REDIS_REMOVE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "M003", "Redis 항목 삭제 실패"),
-  JSON_SERIALIZE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "M004", "짐 항목 JSON 직렬화 실패");;
+  JSON_PARSE_FAIL("M5001", "짐 항목 JSON 파싱 실패", HttpStatus.INTERNAL_SERVER_ERROR),
+  REDIS_SAVE_FAIL("M5002", "Redis 저장 실패", HttpStatus.INTERNAL_SERVER_ERROR),
+  REDIS_REMOVE_FAIL("M5003", "Redis 항목 삭제 실패", HttpStatus.INTERNAL_SERVER_ERROR),
+  JSON_SERIALIZE_FAIL("M5004", "짐 항목 JSON 직렬화 실패", HttpStatus.INTERNAL_SERVER_ERROR),
 
-  private final HttpStatus status;
+  INVALID_ITEM_TYPE_ID("M4041", "유효하지 않은 itemTypeId입니다.", HttpStatus.BAD_REQUEST);
+
   private final String code;
   private final String message;
+  private final HttpStatus status;
+
 }
