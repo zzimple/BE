@@ -1,0 +1,74 @@
+name: zzimple Dev CI/CD
+
+on:
+  push:
+    branches: [develop]
+    
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Make application-dev.properties
+        run: |
+          cd ./src/main/resources
+          echo "${{ secrets.APPLICATION_DEV_PROPERTIES }}" > ./application-dev.properties
+        shell: bash
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build --stacktrace --info
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zzimple
+          path: build/libs/zzimple-0.0.1-SNAPSHOT.jar
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install sshpass (ID/비밀번호 SSH를 위해)
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zzimple
+          path: build/libs/
+
+      - name: Deploy to KT Cloud (ID/비밀번호 방식)
+        env:
+          KT_USERNAME: ${{ secrets.KT_USERNAME }}
+          KT_PASSWORD: ${{ secrets.KT_PASSWORD }}
+          KT_HOST: ${{ secrets.KT_HOST }}
+        run: |
+          echo "📦 Uploading zzimple-0.0.1-SNAPSHOT.jar to KT Cloud..."
+
+          sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no \
+            build/libs/zzimple-0.0.1-SNAPSHOT.jar \
+            $KT_USERNAME@$KT_HOST:/home/$KT_USERNAME/zzimple.jar
+
+          echo "🚀 Starting zzimple.jar on remote server..."
+
+          sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_HOST "
+            pgrep java | xargs -r kill -15  # 기존 Java 프로세스 종료
+            sleep 5
+            nohup java -jar /home/$KT_USERNAME/zzimple.jar --spring.profiles.active=dev > app.log 2>&1 &
+          "
