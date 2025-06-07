@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 public class OwnerApproveRequest {
 
   @Schema(description = "직원 (아이디)", example = "1")
-  private Long staffId;
+  private Long userId;
 
-  @Schema(description = "승인 여부", example = "false")
+  @Schema(description = "승인 여부", example = "APPROVED")
   private Status status;
 }
