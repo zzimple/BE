@@ -16,13 +16,24 @@ public class CustomUserDetails implements UserDetails {
   private final String username;
   private final String password;
   private final Collection<? extends GrantedAuthority> authorities;
+  private final Long storeId;
 
-  // User 엔티티 기반 생성자 추가
+  // 일반 사용자 (고객, 직원)용 생성자
   public CustomUserDetails(User user) {
     this.userId = user.getId();
     this.username = user.getUserName();
     this.password = user.getPassword();
     this.authorities = Collections.singletonList(
         new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+    this.storeId = null;
+  }
+
+  public CustomUserDetails(User user, Long storeId) {
+    this.userId = user.getId();
+    this.username = user.getUserName();
+    this.password = user.getPassword();
+    this.authorities = Collections.singletonList(
+        new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+    this.storeId = storeId;
   }
 }
