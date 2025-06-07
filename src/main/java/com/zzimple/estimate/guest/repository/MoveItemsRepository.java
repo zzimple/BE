@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MoveItemsRepository extends JpaRepository<MoveItems, Long> {
   List<MoveItems> findByEstimateNo(Long estimateNo);
+  void deleteByEstimateNo(Long estimateNo);
 }
