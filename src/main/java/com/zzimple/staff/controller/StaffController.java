@@ -5,15 +5,18 @@ import com.zzimple.global.jwt.CustomUserDetails;
 import com.zzimple.staff.dto.request.OwnerApproveRequest;
 import com.zzimple.staff.dto.request.StaffsendApprovalRequest;
 import com.zzimple.staff.dto.response.OwnerApproveResponse;
+import com.zzimple.staff.dto.response.StaffListResponse;
 import com.zzimple.staff.dto.response.StaffsendApprovalResponse;
 import com.zzimple.staff.enums.Status;
 import com.zzimple.staff.service.StaffService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,24 +34,18 @@ public class StaffController {
 
   @Operation(
       summary = "[ 직원 | 토큰 O | 직원 승인 요청 ]",
-      description =
-          """
-           **Parameters**  \n
-           ownerPhoneNumber: 사장님 전화번호  \n
+      description = "직원이 사장님께 승인 요청 보냄"
+  )
 
-           **Returns**  \n
-           Success: 요청 성공 여부  \n
-           message: 결과 메시지  \n
-           """)
   @PostMapping("/request")
   @PreAuthorize("hasRole('STAFF')")
   public ResponseEntity<BaseResponse<Void>> requestApproval(@AuthenticationPrincipal CustomUserDetails user, @RequestBody StaffsendApprovalRequest request) {
 
-    Long staffId = user.getUserId();
-    log.info("[직원 요청] 승인 요청 시작 - staffId: {}, ownerPhone: {}", staffId, request.getOwnerPhoneNumber());
+    Long userId = user.getUserId();
+    log.info("[직원 요청] 승인 요청 시작 - staffId: {}, ownerPhone: {}", userId, request.getOwnerPhoneNumber());
 
-    StaffsendApprovalResponse response = staffService.requestApproval(staffId, request);
-    log.info("[직원 요청] 승인 요청 완료 - staffId: {}, result: {}", staffId, response.isSuccess());
+    StaffsendApprovalResponse response = staffService.requestApproval(userId, request);
+    log.info("[직원 요청] 승인 요청 완료 - staffId: {}, result: {}", userId, response.isSuccess());
 
     return ResponseEntity.ok(BaseResponse.success("사장님에게 승인 요청을 보냈습니다.", null));
   }
@@ -71,10 +68,10 @@ public class StaffController {
 
     Long ownerId = user.getUserId();
 
-    log.info("[사장님 승인] 사장님 승인 요청 - staffId: {}, ownerId: {}", request.getStaffId(), ownerId);
+    log.info("[사장님 승인] 사장님 승인 요청 - staffId: {}, ownerId: {}", request.getUserId(), ownerId);
 
     // 서비스에서 상태 반환받기
-    Status resultStatus = staffService.approveStaff(request.getStaffId(), request.getStatus(), ownerId);
+    Status resultStatus = staffService.approveStaff(request.getUserId(), request.getStatus(), ownerId);
 
     // 메시지 결정
     String message = switch (resultStatus) {
@@ -86,4 +83,19 @@ public class StaffController {
     OwnerApproveResponse response = new OwnerApproveResponse(resultStatus);
     return ResponseEntity.ok(BaseResponse.success(message, response));
   }
+
+  @Operation(
+      summary = "[ 사장 | 토큰 O ] 직원 전체 목록 조회",
+      description = "사장님 소속의 직원 전체 리스트를 status 기준으로 내려줍니다."
+  )
+  @GetMapping("/list")
+  @PreAuthorize("hasRole('OWNER')")
+  public ResponseEntity<BaseResponse<List<StaffListResponse>>> getStaffList(
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+    Long ownerId = user.getUserId();
+    List<StaffListResponse> staffList = staffService.getStaffListByOwner(ownerId);
+    return ResponseEntity.ok(BaseResponse.success("조회 성공", staffList));
+  }
+
 }
