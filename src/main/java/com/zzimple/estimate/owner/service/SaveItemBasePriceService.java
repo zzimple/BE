@@ -1,9 +1,12 @@
 package com.zzimple.estimate.owner.service;
 
+import com.zzimple.estimate.guest.exception.MoveItemErrorCode;
+import com.zzimple.estimate.guest.repository.ItemTypeRepository;
 import com.zzimple.estimate.owner.dto.request.SaveItemBasePriceRequest;
 import com.zzimple.estimate.owner.dto.response.SaveItemBasePriceResponse;
 import com.zzimple.estimate.owner.entity.MoveItemBasePrice;
 import com.zzimple.estimate.owner.repository.MoveItemBasePriceRepository;
+import com.zzimple.global.exception.CustomException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -18,14 +21,21 @@ import org.springframework.transaction.annotation.Transactional;
 public class SaveItemBasePriceService {
 
   private final MoveItemBasePriceRepository basePriceRepository;
+  private final ItemTypeRepository itemTypeRepository;
 
   @Transactional
   public List<SaveItemBasePriceResponse> saveOrUpdateAll(Long storeId, List<SaveItemBasePriceRequest> requests) {
     log.info("[BasePrice] 사장님 {}의 기본단가 {}개 저장 시도", storeId, requests.size());
 
     List<SaveItemBasePriceResponse> responses = requests.stream().map(request -> {
-      Optional<MoveItemBasePrice> existing = basePriceRepository
-          .findByStoreIdAndItemTypeId(storeId, request.getItemTypeId());
+      Long itemTypeId = request.getItemTypeId();
+
+      // itemTypeId로 이름 조회
+      String name = itemTypeRepository.findById(itemTypeId)
+          .orElseThrow(() -> new CustomException(MoveItemErrorCode.INVALID_ITEM_TYPE_ID))
+          .getItemTypeName();
+
+      Optional<MoveItemBasePrice> existing = basePriceRepository.findByStoreIdAndItemTypeId(storeId, itemTypeId);
 
       if (existing.isPresent()) {
         existing.get().updatePrice(request.getBasePrice());
@@ -37,7 +47,8 @@ public class SaveItemBasePriceService {
 
         MoveItemBasePrice newEntity = MoveItemBasePrice.builder()
             .storeId(storeId)
-            .itemTypeId(request.getItemTypeId())
+            .itemTypeId(itemTypeId)
+            .itemTypeName(name)
             .basePrice(request.getBasePrice())
             .build();
 
@@ -45,7 +56,7 @@ public class SaveItemBasePriceService {
       }
 
       // 모두 응답 DTO로 반환
-      return new SaveItemBasePriceResponse(request.getItemTypeId(), request.getBasePrice());
+      return new SaveItemBasePriceResponse(itemTypeId, name, request.getBasePrice());
     }).toList();
 
     log.info("기본단가 저장 완료. 응답 {}개", responses.size());
@@ -54,14 +65,14 @@ public class SaveItemBasePriceService {
 
 
   @Transactional(readOnly = true)
-  public List<SaveItemBasePriceResponse> getBasePrices(Long ownerId, List<Long> itemTypeIds) {
+  public List<SaveItemBasePriceResponse> getBasePrices(Long storeId, List<Long> itemTypeIds) {
     List<SaveItemBasePriceResponse> result = basePriceRepository
-        .findByStoreIdAndItemTypeIdIn(ownerId, itemTypeIds).stream()
-        .map(bp -> new SaveItemBasePriceResponse(bp.getItemTypeId(), bp.getBasePrice()))
+        .findByStoreIdAndItemTypeIdIn(storeId, itemTypeIds).stream()
+        .map(bp -> new SaveItemBasePriceResponse(bp.getItemTypeId(),  bp.getItemTypeName(), bp.getBasePrice()))
         .collect(Collectors.toList());
 
     log.info("[BasePrice 조회] 사장님 {}의 itemTypeId {}개에 대한 기본단가 {}건 조회됨",
-        ownerId, itemTypeIds.size(), result.size());
+        storeId, itemTypeIds.size(), result.size());
     return result;
   }
 
