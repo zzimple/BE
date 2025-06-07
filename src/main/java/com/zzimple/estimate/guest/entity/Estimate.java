@@ -25,28 +25,15 @@ import lombok.Setter;
     }
 )
 public class Estimate extends BaseTimeEntity {
+
+  // 견적서 - 손님
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "estimate_no", nullable = false)
-
   private Long estimateNo;
 
   @Column(nullable = false)
   private Long userId;
-
-  private Long storeId;
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private MoveType moveType; // 소형이사 / 가정이사
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private MoveOptionType optionType; // 일반 / 반포장 / 포장
-
-  @Column(nullable = false)
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") // ISO 포맷
-  private LocalDateTime scheduledAt;
 
   @Embedded
   @AttributeOverrides({
@@ -98,23 +85,36 @@ public class Estimate extends BaseTimeEntity {
   })
   private AddressDetailInfo toDetail;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private MoveType moveType; // 소형이사 / 가정이사
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private MoveOptionType optionType; // 일반 / 반포장 / 포장
+
   @Column(length = 8)
-  private String moveDate; // yyyyMMdd, 혹은 LocalDate 타입 권장
+  private String moveDate;
+
+  @Column(nullable = false)
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") // ISO 포맷
+  private LocalDateTime moveTime;
 
   @Enumerated(EnumType.STRING)
   private EstimateStatus status;
 
-  @Column(columnDefinition = "TEXT")
   private String customerMemo;
 
+  // 견적서 - 사장님
+  private Long storeId;
 
-  // 사장님
+  private String storeName;
+
   private Integer truckCount;
 
   @Column(length = 1000)
   private String ownerMessage;
 
-  // ✅ 추가: 공휴일/손없는날/주말 여부
   @Column(nullable = false)
   private Boolean isHoliday;
 
@@ -131,29 +131,29 @@ public class Estimate extends BaseTimeEntity {
       Long userId,
       MoveType moveType,
       MoveOptionType optionType,
-      LocalDateTime scheduledAt,
+      LocalDateTime moveTime,
       Address fromAddress,
       Address toAddress,
       String moveDate,
       String customerMemo,
       AddressDetailInfo fromDetail,
       AddressDetailInfo toDetail,
-      Boolean isGoodDay,      // ✅ 추가
-      Boolean isHoliday,      // ✅ 추가
-      Boolean isWeekend       // ✅ 추가
+      Boolean isGoodDay,
+      Boolean isHoliday,
+      Boolean isWeekend
   ) {
     Estimate estimate = new Estimate();
     estimate.userId = userId;
     estimate.moveType = moveType;
     estimate.optionType = optionType;
-    estimate.scheduledAt = scheduledAt;
+    estimate.moveTime = moveTime;
     estimate.fromAddress = fromAddress;
     estimate.toAddress = toAddress;
     estimate.moveDate = moveDate;
     estimate.customerMemo = customerMemo;
     estimate.fromDetail = fromDetail;
     estimate.toDetail = toDetail;
-    estimate.isGoodDay = isGoodDay;      // ✅ 필드 값 세팅
+    estimate.isGoodDay = isGoodDay;
     estimate.isHoliday = isHoliday;
     estimate.isWeekend = isWeekend;
     return estimate;
