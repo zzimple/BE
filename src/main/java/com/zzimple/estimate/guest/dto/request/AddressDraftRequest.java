@@ -23,28 +23,12 @@ public class AddressDraftRequest {
   @Schema(description = "우편번호", example = "06142")
   private String zipNo;
 
-  @Schema(description = "건물 관리 번호", example = "1168010100106770025026369")
-  private String buldMgtNo;
-
-  @Schema(description = "건물부번", example = "0")
-  private Number buldSlno;
-
-  @Schema(description = "읍면동명", example = "역삼동")
-  private String emdNm;
-
-  @Schema(description = "법정리명")
-  private String liNm;
-
   public Address toEntity() {
     return new Address(
         this.getRoadFullAddr(),
         this.getRoadAddrPart1(),
         this.getZipNo(),
-        this.getAddrDetail(),
-        this.getBuldMgtNo(),
-        this.getBuldSlno(),
-        this.getEmdNm(),
-        this.getLiNm()
+        this.getAddrDetail()
     );
   }
 }

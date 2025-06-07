@@ -22,28 +22,11 @@ public class Address {
   @Column(name = "addr_detail")
   private String addrDetail;  // 상세 주소 (예: 101동 203호)
 
-  @Column(name = "buld_mgt_no1", nullable = false)
-  private String buldMgtNo; // 건물관리번호 앞자리 (3자리, 예: 660)
-
-  @Column(name = "buld_slno") // 건물 부번 (건물번호 뒷자리)
-  private Number buldSlno;
-
-  @Column(name = "emd_nm") // 읍면동명
-  private String emdNm;
-
-  @Column(name = "li_nm") // 법정리명
-  private String liNm;
-
   // 그냥 값 보관용 객체라서 생성자 씀.
-  public Address(String roadFullAddr, String roadAddrPart1, String zipNo, String addrDetail,
-      String buldMgtNo, Number buldSlno, String emdNm, String liNm) {
+  public Address(String roadFullAddr, String roadAddrPart1, String zipNo, String addrDetail) {
     this.roadFullAddr = roadFullAddr;
     this.roadAddrPart1 = roadAddrPart1;
     this.zipNo = zipNo;
     this.addrDetail = addrDetail;
-    this.buldMgtNo = buldMgtNo;
-    this.buldSlno = buldSlno;
-    this.emdNm = emdNm;
-    this.liNm = liNm;
   }
 }
