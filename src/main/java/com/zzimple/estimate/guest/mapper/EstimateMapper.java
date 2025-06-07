@@ -33,9 +33,9 @@ public class EstimateMapper {
         draft.getMoveItems().getRequestNote(),
         fromDetail,
         toDetail,
-        holiday.isGoodDay(),   // ✅ 추가
-        holiday.isHoliday(),   // ✅ 추가
-        holiday.isWeekend()    // ✅ 추가
+        holiday.isGoodDay(),
+        holiday.isHoliday(),
+        holiday.isWeekend()
     );
   }
 }
