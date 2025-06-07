@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zzimple.estimate.guest.dto.request.MoveItemsBatchRequest;
 import com.zzimple.estimate.guest.dto.request.MoveItemsDraftRequest;
 import com.zzimple.estimate.guest.dto.response.MoveItemsDraftResponse;
+import com.zzimple.estimate.guest.entity.ItemType;
 import com.zzimple.estimate.guest.entity.MoveItems;
+import com.zzimple.estimate.guest.repository.ItemTypeRepository;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.estimate.guest.exception.MoveItemErrorCode;
@@ -24,6 +26,7 @@ import java.util.*;
 @Service
 public class MoveItemsService {
 
+  private final ItemTypeRepository itemTypeRepository;
   private final StringRedisTemplate redisTemplate;
   private final ObjectMapper objectMapper;
   private static final Duration TTL = Duration.ofHours(1);
@@ -82,7 +85,7 @@ public class MoveItemsService {
         ops.rightPush(itemsKey(draftId), json);
         dtos.add(toDto(req));
       } catch (JsonProcessingException ex) {
-        log.error("serialization failed for entryId={}", req.getEntryId(), ex);
+//        log.error("serialization failed for entryId={}", req.getEntryId(), ex);
         throw new CustomException(MoveItemErrorCode.JSON_SERIALIZE_FAIL);
       }
     }
@@ -142,11 +145,16 @@ public class MoveItemsService {
 
   // DTO 변환 헬퍼
   private MoveItemsDraftResponse.MoveItemResponseDto toDto(MoveItemsDraftRequest request) {
+
+    Long itemTypeId = request.getItemTypeId();
+
+    ItemType itemType = itemTypeRepository.findById(itemTypeId)
+        .orElseThrow(() -> new CustomException(MoveItemErrorCode.INVALID_ITEM_TYPE_ID));
+
     return new MoveItemsDraftResponse.MoveItemResponseDto(
-        request.getEntryId(),
-        request.getItemTypeId() != null ? request.getItemTypeId().longValue() : null,
-        request.getItemTypeName(),
-        request.getCategory(),
+        itemTypeId,
+        itemType.getItemTypeName(),
+        itemType.getCategory(),
         request.getQuantity(),
         request.getType(),
         request.getWidth(),
