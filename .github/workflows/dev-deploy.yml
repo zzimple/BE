@@ -3,6 +3,8 @@ name: zzimple Dev CI/CD
 on:
   push:
     branches: [develop]
+    
+  workflow_dispatch:
 
 jobs:
   build:
@@ -70,5 +72,3 @@ jobs:
             sleep 5
             nohup java -jar /home/$KT_USERNAME/zzimple.jar --spring.profiles.active=dev > app.log 2>&1 &
           "
-
-          workflow_dispatch:
