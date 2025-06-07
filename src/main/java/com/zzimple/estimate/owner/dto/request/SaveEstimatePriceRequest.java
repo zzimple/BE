@@ -1,23 +1,25 @@
 package com.zzimple.estimate.owner.dto.request;
 
-import com.zzimple.estimate.guest.enums.MoveItemCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Schema(description = "견적서 물품 가격 저장 요청")
 public class SaveEstimatePriceRequest {
 
   @Schema(description = "짐 종류 ID", example = "1001")
   private Long itemTypeId;
 
-  private String itemTypeName;
-
-
-  private MoveItemCategory category;
+//  private MoveItemCategory category;
 
   @Schema(description = "수량", example = "1")
   private int quantity;
@@ -29,6 +31,7 @@ public class SaveEstimatePriceRequest {
   private List<ExtraChargeRequest> extraCharges;
 
   @Getter
+  @Setter
   @NoArgsConstructor
   @Schema(description = "추가금 항목")
   public static class ExtraChargeRequest {
