@@ -34,4 +34,25 @@ public class RedisKeyUtil {
   public static String draftMoveHolidayKey(UUID draftId) {
     return String.format("estimate:draft:%s:move-holiday", draftId);
   }
+
+
+  // 해당 날짜가 공휴일인지 여부 ("true"/"false")
+  public static String draftIsHolidayKey(UUID draftId) {
+    return String.format("estimate:draft:%s:is-holiday", draftId);
+  }
+
+  // 공휴일 이름 (예: "현충일", "설날")
+  public static String draftHolidayNameKey(UUID draftId) {
+    return String.format("estimate:draft:%s:holiday-name", draftId);
+  }
+
+  // 손 없는 날 여부 ("true"/"false")
+  public static String draftIsGoodDayKey(UUID draftId) {
+    return String.format("estimate:draft:%s:is-goodday", draftId);
+  }
+
+  // 주말 여부 ("true"/"false")
+  public static String draftIsWeekendKey(UUID draftId) {
+    return String.format("estimate:draft:%s:is-weekend", draftId);
+  }
 }
