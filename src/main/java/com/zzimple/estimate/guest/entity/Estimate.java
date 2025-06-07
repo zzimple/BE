@@ -40,11 +40,7 @@ public class Estimate extends BaseTimeEntity {
       @AttributeOverride(name = "roadFullAddr", column = @Column(name = "from_road_full_addr")),
       @AttributeOverride(name = "roadAddrPart1", column = @Column(name = "from_road_addr_part1")),
       @AttributeOverride(name = "zipNo", column = @Column(name = "from_zip_no")),
-      @AttributeOverride(name = "addrDetail", column = @Column(name = "from_addr_detail")),
-      @AttributeOverride(name = "buldMgtNo", column = @Column(name = "from_buld_mgt_no")),
-      @AttributeOverride(name = "buldSlno", column = @Column(name = "from_buld_slno")),
-      @AttributeOverride(name = "emdNm", column = @Column(name = "from_emd_nm")),
-      @AttributeOverride(name = "liNm", column = @Column(name = "from_li_nm")),
+      @AttributeOverride(name = "addrDetail", column = @Column(name = "from_addr_detail"))
   })
   private Address fromAddress;
 
@@ -53,11 +49,7 @@ public class Estimate extends BaseTimeEntity {
       @AttributeOverride(name = "roadFullAddr", column = @Column(name = "to_road_full_addr")),
       @AttributeOverride(name = "roadAddrPart1", column = @Column(name = "to_road_addr_part1")),
       @AttributeOverride(name = "zipNo", column = @Column(name = "to_zip_no")),
-      @AttributeOverride(name = "addrDetail", column = @Column(name = "to_addr_detail")),
-      @AttributeOverride(name = "buldMgtNo", column = @Column(name = "to_buld_mgt_no")),
-      @AttributeOverride(name = "buldSlno", column = @Column(name = "to_buld_slno")),
-      @AttributeOverride(name = "emdNm", column = @Column(name = "to_emd_nm")),
-      @AttributeOverride(name = "liNm", column = @Column(name = "to_li_nm"))
+      @AttributeOverride(name = "addrDetail", column = @Column(name = "to_addr_detail"))
   })
   private Address toAddress;
 
