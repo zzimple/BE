@@ -1,11 +1,9 @@
 package com.zzimple.estimate.owner.controller;
 
-import com.zzimple.estimate.owner.dto.request.EstimateDetailUpdateRequest;
+import com.zzimple.estimate.guest.dto.response.PagedResponse;
 import com.zzimple.estimate.owner.dto.request.EstimatePreviewRequest;
-import com.zzimple.estimate.owner.dto.request.ItemTypeIdsRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
-import com.zzimple.estimate.owner.dto.request.SaveItemBasePriceRequest;
-import com.zzimple.estimate.owner.dto.response.EstimateDetailUpdateResponse;
+import com.zzimple.estimate.owner.dto.request.SubmitFinalEstimateRequest;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewDetailResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResultResponse;
@@ -26,11 +24,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -50,7 +48,7 @@ public class EstimateOwnerController {
       description = "고객이 제출한 공개 견적서 목록을 페이징 및 필터링하여 조회합니다."
   )
   @GetMapping("/public")
-  public ResponseEntity<BaseResponse<List<EstimatePreviewResponse>>> getPublicEstimates(
+  public ResponseEntity<BaseResponse<PagedResponse<EstimatePreviewResponse>>> getPublicEstimates(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @ModelAttribute EstimatePreviewRequest request
   ) {
@@ -69,10 +67,18 @@ public class EstimateOwnerController {
         request.getToRegion2()
     );
 
-    List<EstimatePreviewResponse> list = result.getContent();
-    return ResponseEntity.ok(
-        BaseResponse.success("공개 견적서 조회 완료", list)
-    );
+    PagedResponse<EstimatePreviewResponse> response = PagedResponse.<EstimatePreviewResponse>builder()
+        .content(result.getContent())
+        .page(result.getNumber())
+        .size(result.getSize())
+        .totalElements(result.getTotalElements())
+        .totalPages(result.getTotalPages())
+        .last(result.isLast())
+        .build();
+    log.info("PagedResponse content size = {}", response.getContent().size());
+
+
+    return ResponseEntity.ok(BaseResponse.success("공개 견적서 조회 완료", response));
   }
 
   @Operation(
@@ -82,42 +88,10 @@ public class EstimateOwnerController {
   @GetMapping("/drafts/{estimateNo}")
   public ResponseEntity<BaseResponse<EstimatePreviewDetailResponse>> getDraftDetail(
       @PathVariable Long estimateNo) {
-    EstimatePreviewDetailResponse detail = estimatePreviewDetailService.getPreviewDraftDetail(estimateNo);
+    EstimatePreviewDetailResponse detail = estimatePreviewDetailService.getPreviewDraftDetail(
+        estimateNo);
     return ResponseEntity.ok(
         BaseResponse.success("공개 견적서 상세 조회 완료", detail)
-    );
-  }
-
-  @Operation(
-      summary = "[사장님 | 토큰 O | 견적서 추가작성 ]",
-      description = "고객이 제출한 견적서 내용을 추가로 작성합니다."
-  )
-  @PatchMapping("/drafts/{estimateNo}")
-  public ResponseEntity<BaseResponse<EstimateDetailUpdateResponse>> updateOwnerEstimate(
-      @PathVariable Long estimateNo,
-      @RequestBody EstimateDetailUpdateRequest request,
-      @AuthenticationPrincipal CustomUserDetails userDetails
-  ) {
-    // DB에 사장님 입력 저장
-    estimateDetailUpdateService.saveOwnerInput(
-        estimateNo,
-        userDetails.getUserId(),
-        request.getTruckCount(),
-        request.getOwnerMessage()
-    );
-
-    // 갱신된 견적서 상세 정보 재조회
-    EstimatePreviewDetailResponse detail =
-        estimatePreviewDetailService.getPreviewDraftDetail(estimateNo);
-
-    EstimateDetailUpdateResponse response = EstimateDetailUpdateResponse.builder()
-        .estimateDetail(detail)
-        .truckCount(request.getTruckCount())
-        .ownerMessage(request.getOwnerMessage())
-        .build();
-
-    return ResponseEntity.ok(
-        BaseResponse.success("사장님 견적 정보가 저장되었습니다.", response)
     );
   }
 
@@ -128,27 +102,13 @@ public class EstimateOwnerController {
   @GetMapping("/default-prices")
   public ResponseEntity<BaseResponse<List<SaveItemBasePriceResponse>>> getBasePrices(
       @AuthenticationPrincipal CustomUserDetails userDetails,
-      @RequestBody ItemTypeIdsRequest request
+      @RequestParam List<Long> itemTypeIds
   ) {
-    Long ownerId = userDetails.getUserId();
-    List<SaveItemBasePriceResponse> response = saveItemBasePriceService.getBasePrices(ownerId, request.getItemTypeIds());
+    Long storeId = userDetails.getStoreId();
+
+    List<SaveItemBasePriceResponse> response = saveItemBasePriceService.getBasePrices(storeId,
+        itemTypeIds);
     return ResponseEntity.ok(BaseResponse.success("사장님 단가 불러오기 성공", response));
-  }
-
-
-  @Operation(
-      summary = "[사장님 | 토큰 O | 물품 기본 단가 일괄 저장]",
-      description = "사장님이 한 번에 여러 짐 항목의 기본 단가를 저장 또는 수정합니다."
-  )
-  @PostMapping("/default-prices")
-  public ResponseEntity<BaseResponse<List<SaveItemBasePriceResponse>>> saveBasePrice(
-      @AuthenticationPrincipal CustomUserDetails userDetails,
-      @RequestBody List<SaveItemBasePriceRequest> requests
-  ) {
-    Long ownerId = userDetails.getUserId();
-    List<SaveItemBasePriceResponse> response = saveItemBasePriceService.saveOrUpdateAll(ownerId,
-        requests);
-    return ResponseEntity.ok(BaseResponse.success("기본 단가 저장이 완료되었습니다.", response));
   }
 
   @Operation(
@@ -172,5 +132,19 @@ public class EstimateOwnerController {
   ) {
     ItemTotalResultResponse result = saveItemExtraPriceService.calculateAndSaveItemTotalPrices(estimateNo);
     return ResponseEntity.ok(BaseResponse.success("총 금액 계산 완료", result));
+  }
+
+
+  @Operation(summary = "[사장님 | 견적 입력 저장]")
+  @PostMapping("/drafts/{estimateNo}/save-owner-input")
+  public ResponseEntity<BaseResponse<String>> saveOwnerInput(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long estimateNo,
+      @RequestBody SubmitFinalEstimateRequest request
+  ) {
+    Long storeId = userDetails.getStoreId();
+
+    estimateDetailUpdateService.saveOwnerInput(storeId, estimateNo, request);
+    return ResponseEntity.ok(BaseResponse.success("사장님 입력 정보가 저장되었습니다."));
   }
 }
