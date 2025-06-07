@@ -31,8 +31,8 @@ public class MoveItemsDraftResponse {
   @AllArgsConstructor
   @Schema(description = "짐 항목 상세")
   public static class MoveItemResponseDto {
-    @Schema(description = "엔트리 고유 ID", example = "uuid")
-    private String entryId;
+//    @Schema(description = "엔트리 고유 ID", example = "uuid")
+//    private String entryId;
 
     @Schema(description = "짐 종류 ID", example = "101")
     private Long itemTypeId;
