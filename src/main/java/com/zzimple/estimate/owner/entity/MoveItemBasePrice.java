@@ -35,6 +35,8 @@ public class MoveItemBasePrice {
   @Column(name = "item_type_id", nullable = false)
   private Long itemTypeId;
 
+  private String itemTypeName;
+
   @Column(name = "base_price", nullable = false)
   private int basePrice;
 
