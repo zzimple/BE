@@ -30,10 +30,10 @@ public class EstimatePreviewService {
       Integer moveYear,
       Integer moveMonth,
       Integer moveDay,
-      String moveType,  // SMALL, HOME
+      String moveType,
       String moveOption,
-      String fromRegion1, // 서울
-      String fromRegion2, // 강남구
+      String fromRegion1,
+      String fromRegion2,
       String toRegion1,
       String toRegion2
   ) {
@@ -70,7 +70,6 @@ public class EstimatePreviewService {
       }
     }
 
-
     // 3) 페이징 & 정렬 설정
     Pageable pageable = PageRequest.of(page, size);
     // 4) 실제 조회 (native query)
@@ -95,6 +94,8 @@ public class EstimatePreviewService {
 
     // 5) Entity → DTO 변환
     Page<EstimatePreviewResponse> result = estimates.map(EstimatePreviewResponse::fromEntity);
+    log.info("result.getContent() size = {}", result.getContent().size());
+
     log.info("[EstimatePublicService] 공개 과적서 조회 완료 - totalElements={}", result.getTotalElements());
 
     return result;
