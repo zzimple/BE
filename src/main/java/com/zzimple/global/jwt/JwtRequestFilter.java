@@ -61,7 +61,15 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
         if (jwtUtil.validateToken(jwt)) {
-          CustomUserDetails userDetails = new CustomUserDetails(user);
+          Long storeId = jwtUtil.extractStoreId(jwt);
+
+          try {
+            storeId = jwtUtil.extractStoreId(jwt);
+          } catch (Exception ex) {
+            log.debug("storeId는 토큰에 존재하지 않거나 null입니다. 일반 사용자로 간주.");
+          }
+
+          CustomUserDetails userDetails = new CustomUserDetails(user, storeId); // storeId 포함 생성자 사용
 
           UsernamePasswordAuthenticationToken authentication =
               new UsernamePasswordAuthenticationToken(
