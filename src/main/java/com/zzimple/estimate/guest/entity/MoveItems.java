@@ -74,5 +74,5 @@ public class MoveItems extends BaseTimeEntity {
 
   private String specialNote;
 
-  private Integer item_totalPrice;
+  private Integer per_item_totalPrice;
 }
