@@ -97,12 +97,14 @@ public class HolidayService {
         String dateName = holidayMap.get(date);
         DayOfWeek dow = ym.atDay(day).getDayOfWeek();
 
-        if ("N".equals(isHoliday) && (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY)) {
-          isHoliday = "Y";
-          dateName = "주말";
-        }
-
         if ("N".equals(isHoliday)) {
+          if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
+            // 주말이면 주말 플래그는 따로, 공휴일은 아니라고 명확히
+            isHoliday = "N";  // 유지
+            dateName = "주말";    // 이름 없음
+          }
+
+          // 손 없는 날 체크
           String lunarResult = checkGoodMoveDay(date);
           if (lunarResult != null) {
             isHoliday = "Y";
@@ -156,7 +158,6 @@ public class HolidayService {
     return null;
   }
 
-
   // 이사 예정일 저장
   public HolidaySaveResponse saveMoveDate(UUID draftId, String moveDate, String moveTime) {
     // 날짜 저장
@@ -172,6 +173,12 @@ public class HolidayService {
     // LocalDate 파싱 (중복 제거용)
     LocalDate parsedDate = LocalDate.parse(moveDate, DateTimeFormatter.ofPattern("yyyyMMdd"));
 
+    // ── [수정] raw 플래그 계산: 주말, 손없는날, API 공휴일을 각각 계산
+    boolean rawIsWeekend = (parsedDate.getDayOfWeek() == DayOfWeek.SATURDAY
+        || parsedDate.getDayOfWeek() == DayOfWeek.SUNDAY);
+    String goodDayLabel  = checkGoodMoveDay(moveDate);
+    boolean rawIsGoodDay  = (goodDayLabel != null);
+
     // 공휴일 정보 조회: 월 단위로 가져온 후 해당 날짜 필터링
     String yearMonth = moveDate.substring(0, 6);
     List<MonthlyHolidayPreviewResponse> monthly = previewMonthlyHolidays(yearMonth);
@@ -180,33 +187,44 @@ public class HolidayService {
         .findFirst()
         .orElseThrow(() -> new CustomException(HolidayErrorCode.API_CALL_FAILED));
 
-    // === [수정 ②] 공휴일 여부 및 이름 Redis 저장 ===
-    boolean isHoliday = matched != null && "Y".equals(matched.getHoliday());
-    String holidayName = matched != null ? matched.getDateName() : "";
+    boolean rawIsHoliday   = "Y".equals(matched.getHoliday());     // raw API 공휴일 플래그
+    String  holidayApiName = matched.getDateName();               // API 공휴일 이름
 
-    redisTemplate.opsForValue().set(RedisKeyUtil.draftIsHolidayKey(draftId), String.valueOf(isHoliday), TTL);
-    redisTemplate.opsForValue().set(RedisKeyUtil.draftHolidayNameKey(draftId), holidayName, TTL);
+    // ── [수정] final 플래그 결정: 우선순위(손없는날 > 공휴일 > 주말) 중 하나만 true
+    boolean finalIsGoodDay   = false;
+    boolean finalIsHoliday   = false;
+    boolean finalIsWeekend   = false;
+    String  finalHolidayName = "";
 
-    // 손 없는 날 여부 저장
-    String goodDayLabel = checkGoodMoveDay(moveDate);
-    boolean isGoodDay = goodDayLabel != null;
-    redisTemplate.opsForValue().set(RedisKeyUtil.draftIsGoodDayKey(draftId), String.valueOf(isGoodDay), TTL);
+    if (rawIsGoodDay) {
+      finalIsGoodDay   = true;
+      finalHolidayName = goodDayLabel;       // "손 없는 날"
+    }
+    else if (rawIsHoliday) {
+      finalIsHoliday   = true;
+      finalHolidayName = holidayApiName;     // "현충일" 등
+    }
+    else if (rawIsWeekend) {
+      finalIsWeekend   = true;
+      finalHolidayName = "주말";
+    }
 
-    // 주말 여부 저장
-    DayOfWeek dayOfWeek = parsedDate.getDayOfWeek();
-    boolean isWeekend = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY);
-    redisTemplate.opsForValue().set(RedisKeyUtil.draftIsWeekendKey(draftId), String.valueOf(isWeekend), TTL);
+    // ── [수정] Redis에는 오직 final 플래그만 저장
+    redisTemplate.opsForValue().set(RedisKeyUtil.draftIsGoodDayKey(draftId), String.valueOf(finalIsGoodDay), TTL);
+    redisTemplate.opsForValue().set(RedisKeyUtil.draftIsHolidayKey(draftId), String.valueOf(finalIsHoliday), TTL);
+    redisTemplate.opsForValue().set(RedisKeyUtil.draftIsWeekendKey(draftId), String.valueOf(finalIsWeekend), TTL);
+    redisTemplate.opsForValue().set(RedisKeyUtil.draftHolidayNameKey(draftId), finalHolidayName,         TTL);
 
-    log.info("[HolidayService] 공휴일 정보 저장 - draftId={}, isHoliday={}, holidayName={}", draftId, isHoliday, holidayName);
+    log.info("[HolidayService] 저장 – draftId={}, goodDay={}, holiday={}, weekend={}, name={}",
+        draftId, finalIsGoodDay, finalIsHoliday, finalIsWeekend, finalHolidayName);
 
-    // 응답에 공휴일 이름까지 포함하여 반환
     return new HolidaySaveResponse(
         moveDate,
         moveTime,
-        holidayName,
-        isHoliday,
-        isGoodDay,
-        isWeekend
+        finalHolidayName,
+        finalIsHoliday,
+        finalIsGoodDay,
+        finalIsWeekend
     );
   }
 
