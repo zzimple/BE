@@ -118,8 +118,12 @@ public class EstimateOwnerController {
   @PostMapping("/drafts/{estimateNo}/items")
   public ResponseEntity<BaseResponse<String>> saveEstimateItems(
       @PathVariable Long estimateNo,
+      @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestBody List<SaveEstimatePriceRequest> requests) {
-    saveItemExtraPriceService.saveEstimateItems(estimateNo, requests);
+
+    Long storeId = userDetails.getStoreId();
+
+    saveItemExtraPriceService.saveEstimateItems(estimateNo, storeId, requests);
     return ResponseEntity.ok(BaseResponse.success("견적서 항목 저장 완료"));
   }
 

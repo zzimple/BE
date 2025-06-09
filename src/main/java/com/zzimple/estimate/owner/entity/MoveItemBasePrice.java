@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,11 @@ import lombok.NoArgsConstructor;
     name = "item_base_price",
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_owner_item_type", columnNames = {"owner_id", "item_type_id"})
+    },
+    indexes = {
+        @Index(name = "idx_base_price_store_id", columnList = "store_id")
     }
+
 )
 public class MoveItemBasePrice {
 
@@ -29,7 +34,7 @@ public class MoveItemBasePrice {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "owner_id", nullable = false)
+  @Column(name = "store_id", nullable = false)
   private Long storeId;
 
   @Column(name = "item_type_id", nullable = false)
@@ -37,8 +42,8 @@ public class MoveItemBasePrice {
 
   private String itemTypeName;
 
-  @Column(name = "base_price", nullable = false)
-  private int basePrice;
+  @Column(nullable = true, columnDefinition = "INT DEFAULT 0")
+  private Integer basePrice;
 
   public void updatePrice(int newPrice) {
     this.basePrice = newPrice;
