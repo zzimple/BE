@@ -20,7 +20,8 @@ import lombok.Setter;
 @Table(
     name = "moveItems",
     indexes = {
-        @Index(name = "idx_estimate_no", columnList = "estimate_no")
+        @Index(name = "idx_estimate_no", columnList = "estimate_no"),
+        @Index(name = "idx_store_id", columnList = "store_id")
     }
 )
 public class MoveItems extends BaseTimeEntity {
@@ -31,6 +32,9 @@ public class MoveItems extends BaseTimeEntity {
 
   @Column(name = "estimate_no", nullable = false)
   private Long estimateNo;
+
+  @Column(name = "store_id")
+  private Long storeId;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -45,7 +49,8 @@ public class MoveItems extends BaseTimeEntity {
   @Column(nullable = false)
   private int quantity;
 
-  private int basePrice;
+  @Column(nullable = true, columnDefinition = "INT DEFAULT 0")
+  private Integer basePrice;
 
   private String type;
   private String width;

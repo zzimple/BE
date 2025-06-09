@@ -13,7 +13,8 @@ import lombok.*;
 @Table(
     name = "estimate_extra_charge",
     indexes = {
-        @Index(name = "idx_estimate_no", columnList = "estimate_no")
+        @Index(name = "idx_estimate_no", columnList = "estimate_no"),
+        @Index(name = "idx_estimate_store_id", columnList = "store_id")
     }
 )
 public class EstimateExtraCharge extends BaseTimeEntity {
@@ -24,6 +25,9 @@ public class EstimateExtraCharge extends BaseTimeEntity {
 
   @Column(name = "estimate_no", nullable = false)
   private Long estimateNo;
+
+  @Column(name = "store_id", nullable = false)
+  private Long storeId;
 
   @Column(nullable = false)
   private Integer amount;

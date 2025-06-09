@@ -55,7 +55,7 @@ public class EstimateDetailUpdateService {
 
       estimate.setTruckCount(truckCount);
 
-      saveExtraCharge(estimateNo, "트럭 추가금 (" + truckCount + "대)", truckExtra);
+      saveExtraCharge(estimateNo, storeId, "트럭 추가금 (" + truckCount + "대)", truckExtra);
     }
 
     // 2. 직접 입력한 추가 사유
@@ -63,24 +63,24 @@ public class EstimateDetailUpdateService {
     if (extraCharges != null) {
       for (ExtraChargeRequest charge : extraCharges) {
         totalExtraCharge += charge.getAmount();
-        saveExtraCharge(estimateNo, charge.getReason(), charge.getAmount());
+        saveExtraCharge(estimateNo,storeId, charge.getReason(), charge.getAmount());
       }
     }
 
     // 3. 날짜 조건에 따른 추가금
     if (estimate.getIsHoliday()) {
       totalExtraCharge += setting.getHolidayCharge();
-      saveExtraCharge(estimateNo, "공휴일 추가금", setting.getHolidayCharge());
+      saveExtraCharge(estimateNo, storeId,"공휴일 추가금", setting.getHolidayCharge());
     }
 
     if (estimate.getIsGoodDay()) {
       totalExtraCharge += setting.getGoodDayCharge();
-      saveExtraCharge(estimateNo, "손 없는 날 추가금", setting.getGoodDayCharge());
+      saveExtraCharge(estimateNo, storeId,"손 없는 날 추가금", setting.getGoodDayCharge());
     }
 
     if (estimate.getIsWeekend()) {
       totalExtraCharge += setting.getWeekendCharge();
-      saveExtraCharge(estimateNo, "주말 추가금", setting.getWeekendCharge());
+      saveExtraCharge(estimateNo, storeId,"주말 추가금", setting.getWeekendCharge());
     }
 
     //   1. moveItems 직접 조회 (기존 getMoveItems() 대신)
@@ -104,9 +104,10 @@ public class EstimateDetailUpdateService {
         estimateNo, totalExtraCharge, request.getOwnerMessage());
   }
 
-  private void saveExtraCharge(Long estimateNo, String reason, int amount) {
+  private void saveExtraCharge(Long estimateNo, Long storeId, String reason, int amount) {
     EstimateExtraCharge charge = EstimateExtraCharge.builder()
         .estimateNo(estimateNo)
+        .storeId(storeId)
         .reason(reason)
         .amount(amount)
         .build();

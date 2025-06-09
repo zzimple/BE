@@ -10,7 +10,12 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "store_price_setting")
+@Table(
+    name = "store_price_setting",
+    indexes = {
+        @Index(name = "idx_store_price_store_id", columnList = "store_id")
+    }
+)
 public class StorePriceSetting extends BaseTimeEntity {
   @Id
   private Long storeId;

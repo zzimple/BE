@@ -23,7 +23,8 @@ import lombok.Setter;
 @Table(
     name = "move_item_extra_charge",
     indexes = {
-        @Index(name = "idx_move_item_id", columnList = "move_item_id")
+        @Index(name = "idx_item_type_id", columnList = "item_type_id"),
+        @Index(name = "idx_move_item_store_id", columnList = "store_id")
     }
 )
 public class MoveItemExtraCharge extends BaseTimeEntity {
@@ -33,15 +34,18 @@ public class MoveItemExtraCharge extends BaseTimeEntity {
   private Long id;
 
   @Column(name = "estimate_No", nullable = false)
-  private Long estimateNo ;
+  private Long estimateNo;
 
-  @Column(name = "move_item_id", nullable = false)
-  private Long moveItemId; // MoveItems의 PK 값
+  @Column(name = "store_id", nullable = false)
+  private Long storeId;
+
+  @Column(name = "item_type_id", nullable = false)
+  private Long itemTypeId;
 
   @Column(nullable = false)
-  private int amount; // 추가 금액 (ex. 10000)
+  private int amount;
 
   @Column(length = 255)
-  private String reason; // 추가금 사유 (ex. "계단 이동")
+  private String reason;
 
 }
