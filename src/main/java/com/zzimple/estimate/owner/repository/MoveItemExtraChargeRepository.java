@@ -5,6 +5,11 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MoveItemExtraChargeRepository extends JpaRepository<MoveItemExtraCharge, Long> {
-  List<MoveItemExtraCharge> findByMoveItemId(Long moveItemId);
-  void deleteByMoveItemId(Long moveItemId);
+  List<MoveItemExtraCharge> findByItemTypeId(Long itemTypeId);
+  void deleteByItemTypeId(Long itemTypeId);  List<MoveItemExtraCharge>
+  findByEstimateNoAndStoreIdAndItemTypeId(
+          Long estimateNo,
+          Long storeId,
+          Long itemTypeId
+      );
 }
