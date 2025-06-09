@@ -5,7 +5,9 @@ import com.zzimple.estimate.guest.repository.MoveItemsRepository;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResponse;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResultResponse;
+import com.zzimple.estimate.owner.entity.EstimateCalculation;
 import com.zzimple.estimate.owner.entity.MoveItemExtraCharge;
+import com.zzimple.estimate.owner.repository.EstimateCalculationRepository;
 import com.zzimple.estimate.owner.repository.MoveItemExtraChargeRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +24,7 @@ public class SaveItemExtraPriceService {
 
   private final MoveItemsRepository moveItemsRepository;
   private final MoveItemExtraChargeRepository moveItemExtraChargeRepository;
+  private final EstimateCalculationRepository estimateCalculationRepository;
 
   @Transactional
   public void saveEstimateItems(Long estimateNo, Long storeId, List<SaveEstimatePriceRequest> itemRequests) {
@@ -66,7 +69,7 @@ public class SaveItemExtraPriceService {
   }
 
   @Transactional
-  public ItemTotalResultResponse calculateAndSaveItemTotalPrices(Long estimateNo) {
+  public ItemTotalResultResponse calculateAndSaveItemTotalPrices(Long estimateNo, Long storeId) {
 
     List<MoveItems> items = moveItemsRepository.findByEstimateNo(estimateNo);
 
@@ -82,7 +85,7 @@ public class SaveItemExtraPriceService {
       );
       int itemTotalPrice = baseTotal + extraTotal;
 
-      item.setItem_totalPrice(itemTotalPrice);
+      item.setPer_item_totalPrice(itemTotalPrice);
       responses.add(toItemTotalResponse(item, baseTotal, extraTotal, itemTotalPrice));
 
       totalPrice += itemTotalPrice;
@@ -90,6 +93,18 @@ public class SaveItemExtraPriceService {
     }
 
     moveItemsRepository.saveAll(items);
+
+    EstimateCalculation estimateCalculation = estimateCalculationRepository.findByEstimateNo(estimateNo)
+        .orElseGet(() -> EstimateCalculation.builder()
+            .estimateNo(estimateNo)
+            .storeId(storeId)
+            .extraChargesTotal(0)
+            .finalTotalPrice(0)
+            .build()
+        );
+
+    estimateCalculation.setItemsTotalPrice(totalPrice);
+    estimateCalculationRepository.save(estimateCalculation);
 
     // 전체 금액과 아이템 리스트를 함께 반환
     return new ItemTotalResultResponse(totalPrice, responses);

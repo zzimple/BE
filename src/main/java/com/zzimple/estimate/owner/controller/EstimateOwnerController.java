@@ -4,6 +4,7 @@ import com.zzimple.estimate.guest.dto.response.PagedResponse;
 import com.zzimple.estimate.owner.dto.request.EstimatePreviewRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SubmitFinalEstimateRequest;
+import com.zzimple.estimate.owner.dto.response.CalculateOwnerInputResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewDetailResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResultResponse;
@@ -39,9 +40,9 @@ public class EstimateOwnerController {
 
   private final EstimatePreviewService estimatePreviewService;
   private final EstimatePreviewDetailService estimatePreviewDetailService;
-  private final EstimateDetailUpdateService estimateDetailUpdateService;
   private final SaveItemBasePriceService saveItemBasePriceService;
   private final SaveItemExtraPriceService saveItemExtraPriceService;
+  private final EstimateDetailUpdateService estimateDetailUpdateService;
 
   @Operation(
       summary = "[사장님 | 토큰 O | 공개 견적서 조회]",
@@ -128,18 +129,22 @@ public class EstimateOwnerController {
   }
 
   @Operation(
-      summary = "[사장님 | 토큰 O | 견적서 기본금 + 추가금 계산기]",
+      summary = "[사장님 | 토큰 O | 견적서 물품 기본금 + 추가금 계산기]",
       description = "저장 없이 견적 항목들의 기본금 + 추가금을 계산하여 프론트에 반환합니다.")
   @PostMapping("/drafts/{estimateNo}/items/item-total")
   public ResponseEntity<BaseResponse<ItemTotalResultResponse>> ItemTotalPrices(
-      @PathVariable Long estimateNo
-  ) {
-    ItemTotalResultResponse result = saveItemExtraPriceService.calculateAndSaveItemTotalPrices(estimateNo);
+      @PathVariable Long estimateNo,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+      ) {
+
+    Long storeId = userDetails.getStoreId();
+
+    ItemTotalResultResponse result = saveItemExtraPriceService.calculateAndSaveItemTotalPrices(estimateNo, storeId);
     return ResponseEntity.ok(BaseResponse.success("총 금액 계산 완료", result));
   }
 
 
-  @Operation(summary = "[사장님 | 견적 입력 저장]")
+  @Operation(summary = "[사장님 | 견적 추가사항 최종 입력 저장]")
   @PostMapping("/drafts/{estimateNo}/save-owner-input")
   public ResponseEntity<BaseResponse<String>> saveOwnerInput(
       @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -150,5 +155,30 @@ public class EstimateOwnerController {
 
     estimateDetailUpdateService.saveOwnerInput(storeId, estimateNo, request);
     return ResponseEntity.ok(BaseResponse.success("사장님 입력 정보가 저장되었습니다."));
+  }
+
+
+  @Operation(
+      summary = "[사장님 | 토큰 O | 최종 합계 계산 및 저장]",
+      description = "items_total_price 및 estimate_extra_charge 합산 → estimate_calculation 에 저장합니다."
+  )
+  @PostMapping("/drafts/{estimateNo}/calculate-and-save-final")
+  public ResponseEntity<BaseResponse<CalculateOwnerInputResponse>> calculateAndSaveFinalTotals(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long estimateNo
+  ) {
+    Long storeId = userDetails.getStoreId();
+
+    // 1) 계산하고 저장만 수행
+    estimateDetailUpdateService.calculateAndSaveFinalTotals(storeId, estimateNo);
+
+    // 1) 계산 + 저장 + DTO 생성(반환)
+    CalculateOwnerInputResponse resp =
+        estimateDetailUpdateService.calculateAndSaveFinalTotals(storeId, estimateNo);
+
+    // 3) 결과 반환
+    return ResponseEntity.ok(
+        BaseResponse.success("최종 합계 계산 및 저장 완료", resp)
+    );
   }
 }
