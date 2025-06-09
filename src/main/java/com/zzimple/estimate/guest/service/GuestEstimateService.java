@@ -123,7 +123,7 @@ public class GuestEstimateService {
     // 물품별 단가 및 추가금 구성
     List<SaveEstimatePriceRequest> itemPriceDetails = moveItems.stream()
         .map(item -> {
-          List<MoveItemExtraCharge> extraList = moveItemExtraChargeRepository.findByMoveItemId(item.getId());
+          List<MoveItemExtraCharge> extraList = moveItemExtraChargeRepository.findByItemTypeId(item.getId());
           log.debug("[물품 추가금] itemId = {}, 추가금 개수 = {}", item.getId(), extraList.size());
 
           List<ExtraChargeRequest> extraChargeRequests = extraList.stream()
@@ -196,7 +196,7 @@ public class GuestEstimateService {
       // MoveItems 삭제
       List<MoveItems> moveItems = moveItemsRepository.findByEstimateNo(estimateNo);
       for (MoveItems item : moveItems) {
-        moveItemExtraChargeRepository.deleteByMoveItemId(item.getId()); // 물품별 추가금
+        moveItemExtraChargeRepository.deleteByItemTypeId(item.getId()); // 물품별 추가금
       }
       moveItemsRepository.deleteByEstimateNo(estimateNo); // 짐 항목
 

@@ -1,18 +1,15 @@
 package com.zzimple.estimate.owner.service;
 
-import com.zzimple.estimate.guest.entity.ItemType;
 import com.zzimple.estimate.guest.entity.MoveItems;
-import com.zzimple.estimate.guest.exception.MoveItemErrorCode;
-import com.zzimple.estimate.guest.repository.ItemTypeRepository;
 import com.zzimple.estimate.guest.repository.MoveItemsRepository;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResponse;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResultResponse;
 import com.zzimple.estimate.owner.entity.MoveItemExtraCharge;
 import com.zzimple.estimate.owner.repository.MoveItemExtraChargeRepository;
-import com.zzimple.global.exception.CustomException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,75 +22,52 @@ public class SaveItemExtraPriceService {
 
   private final MoveItemsRepository moveItemsRepository;
   private final MoveItemExtraChargeRepository moveItemExtraChargeRepository;
-  private final ItemTypeRepository itemTypeRepository;
 
   @Transactional
-  public void saveEstimateItems(Long estimateNo, List<SaveEstimatePriceRequest> itemRequests) {
-    List<MoveItems> existingItems = moveItemsRepository.findByEstimateNo(estimateNo);
+  public void saveEstimateItems(Long estimateNo, Long storeId, List<SaveEstimatePriceRequest> itemRequests) {
 
-    for (SaveEstimatePriceRequest item : itemRequests) {
-      ItemType itemType = itemTypeRepository.findById(item.getItemTypeId())
-          .orElseThrow(() -> new CustomException(MoveItemErrorCode.INVALID_ITEM_TYPE_ID));
+    // moveitem의 기본금을 update하기.
+    for (SaveEstimatePriceRequest req : itemRequests) {
+      log.debug("기본금 업데이트: estimateNo={}, storeId={}, itemTypeId={}, newBasePrice={}",
+        estimateNo, storeId, req.getItemTypeId(), req.getBasePrice());
 
-      // 중복 여부 판단
-      boolean isDuplicate = existingItems.stream().anyMatch(existing -> {
-        if (!existing.getItemTypeId().equals(item.getItemTypeId())) return false;
-        if (existing.getQuantity() != item.getQuantity()) return false;
-        if (existing.getBasePrice() != item.getBasePrice()) return false;
+      int updated = moveItemsRepository.updateBasePriceIfChanged(
+          estimateNo,
+          storeId,
+          req.getItemTypeId(),
+          req.getBasePrice()
+      );
+      log.debug("업데이트된 행 수: itemTypeId={}, updated={}", req.getItemTypeId(), updated);
+    }
 
-        List<MoveItemExtraCharge> existingExtras =
-            moveItemExtraChargeRepository.findByMoveItemId(existing.getId());
+    // 2) item-level 추가금 저장: 추가 항목마다 직접 itemId 조회 후 처리
+    for (SaveEstimatePriceRequest request : itemRequests) {
+      log.debug("옵션 처리 시작: estimateNo={}, storeId={}, itemTypeId={}",
+          estimateNo, storeId, request.getItemTypeId());
+      // 2-1) estimateNo + storeId + itemTypeId 로 DB PK(itemId)만 조회 (findByEstimateNoAndItemTypeId 커스텀 메서드 필요)
+      Long itemId = request.getItemTypeId();
 
-        // 기존 옵션들과 새로운 옵션이 동일한지 비교
-        if ((existingExtras == null || existingExtras.isEmpty())
-            && (item.getExtraCharges() == null || item.getExtraCharges().isEmpty())) {
-          return true;
-        }
-
-        if (existingExtras.size() != item.getExtraCharges().size()) return false;
-
-        // 두 리스트가 동일한지 비교
-        return existingExtras.stream().allMatch(e ->
-            item.getExtraCharges().stream().anyMatch(i ->
-                i.getAmount() == e.getAmount() && i.getReason().equals(e.getReason()))
-        );
-      });
-
-      if (isDuplicate) {
-        log.info("중복된 항목이므로 저장하지 않음: {}", item.getItemTypeId());
-        continue;
-      }
-
-      // 중복이 아니면 저장
-      MoveItems moveItem = MoveItems.builder()
-          .estimateNo(estimateNo)
-          .itemTypeId(item.getItemTypeId())
-          .itemTypeName(itemType.getItemTypeName())
-          .quantity(item.getQuantity())
-          .basePrice(item.getBasePrice())
-          .category(itemType.getCategory())
-          .build();
-
-      MoveItems savedItem = moveItemsRepository.save(moveItem);
-
-      if (item.getExtraCharges() != null && !item.getExtraCharges().isEmpty()) {
-        List<MoveItemExtraCharge> extraCharges = item.getExtraCharges().stream()
-            .map(extra -> MoveItemExtraCharge.builder()
-                .moveItemId(savedItem.getId())
+      // 2-3) 새 옵션 리스트 insert
+      if (request.getExtraCharges() != null) {
+        List<MoveItemExtraCharge> toSave = request.getExtraCharges().stream()
+            .map(ec -> MoveItemExtraCharge.builder()
                 .estimateNo(estimateNo)
-                .amount(extra.getAmount())
-                .reason(extra.getReason())
+                .storeId(storeId)
+                .itemTypeId(itemId)
+                .amount(ec.getAmount())
+                .reason(ec.getReason())
                 .build())
-            .toList();
-
-        moveItemExtraChargeRepository.saveAll(extraCharges);
+            .collect(Collectors.toList());
+        moveItemExtraChargeRepository.saveAll(toSave);
+        log.debug("새 옵션 저장 완료: itemId={}, count={}", itemId, toSave.size());
       }
     }
+    log.info("견적 저장 완료: estimateNo={}", estimateNo);
   }
-
 
   @Transactional
   public ItemTotalResultResponse calculateAndSaveItemTotalPrices(Long estimateNo) {
+
     List<MoveItems> items = moveItemsRepository.findByEstimateNo(estimateNo);
 
     List<ItemTotalResponse> responses = new ArrayList<>();
@@ -101,19 +75,23 @@ public class SaveItemExtraPriceService {
 
     for (MoveItems item : items) {
       int baseTotal = calculateBaseTotal(item);
-      int extraTotal = calculateExtraTotal(item.getId());
+      int extraTotal = calculateExtraTotal(
+          item.getEstimateNo(),
+          item.getStoreId(),
+          item.getItemTypeId()
+      );
       int itemTotalPrice = baseTotal + extraTotal;
 
       item.setItem_totalPrice(itemTotalPrice);
       responses.add(toItemTotalResponse(item, baseTotal, extraTotal, itemTotalPrice));
 
-      totalPrice += itemTotalPrice; // ✅ 전체 총합 누적
+      totalPrice += itemTotalPrice;
       log.info("견적 항목 ID {} → base: {}, extra: {}, total: {}", item.getId(), baseTotal, extraTotal, itemTotalPrice);
     }
 
     moveItemsRepository.saveAll(items);
 
-    // ✅ 전체 금액과 아이템 리스트를 함께 반환
+    // 전체 금액과 아이템 리스트를 함께 반환
     return new ItemTotalResultResponse(totalPrice, responses);
   }
 
@@ -121,8 +99,9 @@ public class SaveItemExtraPriceService {
     return item.getBasePrice() * item.getQuantity();
   }
 
-  private int calculateExtraTotal(Long itemId) {
-    return moveItemExtraChargeRepository.findByMoveItemId(itemId)
+  private int calculateExtraTotal(Long estimateNo, Long storeId, Long itemTypeId) {
+    return moveItemExtraChargeRepository
+        .findByEstimateNoAndStoreIdAndItemTypeId(estimateNo, storeId, itemTypeId)
         .stream()
         .mapToInt(MoveItemExtraCharge::getAmount)
         .sum();
@@ -130,9 +109,9 @@ public class SaveItemExtraPriceService {
 
   private ItemTotalResponse toItemTotalResponse(MoveItems item, int baseTotal, int extraTotal, int totalPrice) {
     return new ItemTotalResponse(
-        item.getId(),                 // itemId
-        item.getItemTypeId(),        // itemTypeId
-        item.getItemTypeName(),      // itemTypeName
+        item.getId(),
+        item.getItemTypeId(),
+        item.getItemTypeName(),
         baseTotal,
         extraTotal,
         totalPrice
