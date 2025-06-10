@@ -84,12 +84,22 @@ public class AuthController {
       String newAccessToken;
 
       if (user.getRole() == UserRole.OWNER) {
-        Owner owner = ownerRepository.findByUserId(user.getId())
-            .orElseThrow(() -> new CustomException(OwnerErrorCode.OWNER_NOT_FOUND));
-        Store store = storeRepository.findByOwnerId(owner.getId())
+//        Owner owner = ownerRepository.findByUserId(user.getId())
+//            .orElseThrow(() -> new CustomException(OwnerErrorCode.OWNER_NOT_FOUND));
+
+//        Store store = storeRepository.findByOwnerUserId(owner.getId())
+//            .orElseThrow(() -> new CustomException(OwnerErrorCode.STORE_NOT_FOUND));
+
+        Store store = storeRepository.findByOwnerUserId(user.getId())
             .orElseThrow(() -> new CustomException(OwnerErrorCode.STORE_NOT_FOUND));
 
-        newAccessToken = jwtUtil.createAccessToken(loginId, roles, store.getId());
+        Long storeId = store.getId();         // 가게 ID
+        Long ownerId = store.getOwnerId();    // 사장님 PK
+        newAccessToken = jwtUtil.createAccessToken(
+            user.getLoginId(), roles, storeId, ownerId
+        );
+
+//        newAccessToken = jwtUtil.createAccessToken(loginId, roles, store.getId(), owner.getId() );
       } else {
         newAccessToken = jwtUtil.createAccessToken(loginId, roles); // 고침
       }

@@ -18,7 +18,7 @@ public class StaffListResponse {
 
   public static StaffListResponse from(Staff staff, User user) {
     return new StaffListResponse(
-        staff.getId(),
+        staff.getStaffId(),
         staff.getUserId(),
         user.getUserName(),
         user.getLoginId(),

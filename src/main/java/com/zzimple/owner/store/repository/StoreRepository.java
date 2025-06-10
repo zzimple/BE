@@ -1,10 +1,19 @@
 package com.zzimple.owner.store.repository;
 
 import com.zzimple.owner.store.entity.Store;
+import io.lettuce.core.dynamic.annotation.Param;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface StoreRepository extends JpaRepository<Store, Long> {
-  Optional<Store> findByOwnerId(Long ownerId);  // ownerId는 FK 아님, 인덱스로 검색
+  @Query("""
+    SELECT s
+    FROM Store s
+    JOIN Owner o ON s.ownerId = o.id
+    WHERE o.userId = :userId
+  """)
+  Optional<Store> findByOwnerUserId(@Param("userId") Long userId);
+  Optional<Store> findByOwnerId(Long ownerId);
 }
 
