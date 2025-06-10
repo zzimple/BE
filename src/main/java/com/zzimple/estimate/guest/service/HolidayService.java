@@ -7,6 +7,7 @@ import com.zzimple.estimate.guest.dto.response.HolidaySaveResponse;
 import com.zzimple.global.config.RedisKeyUtil;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.estimate.guest.exception.HolidayErrorCode;
+import java.nio.charset.StandardCharsets;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,7 +72,9 @@ public class HolidayService {
         .queryParam("numOfRows", "100")
         .queryParam("pageNo", "1")
         .queryParam("_type", "json")
-        .build(true).toUri();
+        .encode(StandardCharsets.UTF_8)
+        .build()
+        .toUri();
     log.info("[HolidayService] 월별 요청 URL: {}", apiUrl);
     List<MonthlyHolidayPreviewResponse> result = new ArrayList<>();
 
@@ -136,7 +139,8 @@ public class HolidayService {
           .queryParam("solMonth", String.format("%02d", solar.getMonthValue()))
           .queryParam("solDay", String.format("%02d", solar.getDayOfMonth()))
           .queryParam("_type", "json")
-          .build(true)
+          .encode(StandardCharsets.UTF_8)
+          .build()
           .toUri();
 
       String lunarJson = restTemplate.getForObject(lunarApi, String.class);
