@@ -4,6 +4,7 @@ import com.zzimple.estimate.guest.dto.response.EstimateListDetailResponse;
 import com.zzimple.estimate.guest.dto.response.EstimateListResponse;
 import com.zzimple.estimate.guest.dto.response.GuestEstimateRespondResult;
 import com.zzimple.estimate.guest.dto.response.PagedResponse;
+import com.zzimple.estimate.guest.enums.EstimateStatus;
 import com.zzimple.estimate.guest.service.GuestEstimateService;
 import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.jwt.CustomUserDetails;
@@ -60,11 +61,12 @@ public class GuestEstimateController {
   )
   public ResponseEntity<BaseResponse<GuestEstimateRespondResult>> respondEstimate(
       @PathVariable Long estimateNo,
-      @RequestParam boolean accepted
+      @RequestParam EstimateStatus status
   ) {
+
     GuestEstimateRespondResult result = GuestEstimateRespondResult.builder()
         .estimateNo(estimateNo)
-        .accepted(accepted)
+        .status(status)
         .build();
 
     return ResponseEntity.ok(BaseResponse.success("견적서 응답 처리 완료",result));
