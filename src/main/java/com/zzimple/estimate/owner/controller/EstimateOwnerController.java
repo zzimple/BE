@@ -48,15 +48,17 @@ public class EstimateOwnerController {
       summary = "[사장님 | 토큰 O | 공개 견적서 조회]",
       description = "고객이 제출한 공개 견적서 목록을 페이징 및 필터링하여 조회합니다."
   )
-  @GetMapping("/public")
+  @GetMapping("/list/public")
   public ResponseEntity<BaseResponse<PagedResponse<EstimatePreviewResponse>>> getPublicEstimates(
       @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam int page,
+      @RequestParam int size,
       @ModelAttribute EstimatePreviewRequest request
   ) {
     Page<EstimatePreviewResponse> result = estimatePreviewService.getAvailableEstimates(
         userDetails.getUserId(),
-        request.getPage(),
-        request.getSize(),
+        page,
+        size,
         request.getMoveYear(),
         request.getMoveMonth(),
         request.getMoveDay(),
@@ -68,21 +70,15 @@ public class EstimateOwnerController {
         request.getToRegion2()
     );
 
-    PagedResponse<EstimatePreviewResponse> response = PagedResponse.<EstimatePreviewResponse>builder()
-        .content(result.getContent())
-        .page(result.getNumber())
-        .size(result.getSize())
-        .totalElements(result.getTotalElements())
-        .totalPages(result.getTotalPages())
-        .last(result.isLast())
-        .build();
-    log.info("PagedResponse content size = {}", response.getContent().size());
+    PagedResponse<EstimatePreviewResponse> response = PagedResponse.of(result);
 
+    log.info("PagedResponse content size = {}", response.getContent().size());
 
     return ResponseEntity.ok(BaseResponse.success("공개 견적서 조회 완료", response));
   }
 
-  @Operation(
+
+      @Operation(
       summary = "[사장님 | 토큰 O | 견적서 상세조회]",
       description = "고객이 제출한 공개 견적서 조회합니다."
   )

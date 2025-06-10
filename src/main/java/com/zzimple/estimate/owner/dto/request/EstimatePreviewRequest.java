@@ -1,5 +1,6 @@
 package com.zzimple.estimate.owner.dto.request;
 
+import com.zzimple.estimate.guest.enums.EstimateStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,12 +15,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Schema(description = "견적서 목록 조회 요청")
 public class EstimatePreviewRequest {
-
-  @Schema(description = "페이지 번호 (0부터 시작)", example = "0", defaultValue = "0")
-  private int page;
-
-  @Schema(description = "페이지 크기", example = "10", defaultValue = "10")
-  private int size;
 
   @Schema(description = "이사 예정 연도 (moveDate를 분리한 값)", example = "2025")
   private Integer moveYear;
@@ -47,4 +42,8 @@ public class EstimatePreviewRequest {
 
   @Schema(description = "도착지 구·군", example = "성남시")
   private String toRegion2;
+
+  @Schema(description = "견적서 상태", example = "PENDING")
+  private EstimateStatus status;
+
 }
