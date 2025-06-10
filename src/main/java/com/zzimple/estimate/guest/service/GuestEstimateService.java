@@ -10,7 +10,9 @@ import com.zzimple.estimate.guest.enums.MoveItemCategory;
 import com.zzimple.estimate.guest.repository.MoveItemsRepository;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest.ExtraChargeRequest;
+import com.zzimple.estimate.owner.entity.EstimateCalculation;
 import com.zzimple.estimate.owner.entity.MoveItemExtraCharge;
+import com.zzimple.estimate.owner.repository.EstimateCalculationRepository;
 import com.zzimple.estimate.owner.repository.EstimateExtraChargeRepository;
 import com.zzimple.estimate.owner.repository.EstimateRepository;
 import com.zzimple.estimate.owner.repository.MoveItemExtraChargeRepository;
@@ -48,6 +50,7 @@ public class GuestEstimateService {
   private final StoreRepository storeRepository;
   private final OwnerRepository ownerRepository;
   private final UserRepository userRepository;
+  private final EstimateCalculationRepository estimateCalculationRepository;
 
   // 사장님에게 견적서 요청 온거 미리보기
   public PagedResponse<EstimateListResponse> getAcceptedEstimatesForUser(Long userId, int page, int size) {
@@ -116,6 +119,9 @@ public class GuestEstimateService {
     User user = userRepository.findById(owner.getUserId())
         .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+    EstimateCalculation calculation = estimateCalculationRepository.findByEstimateNo(estimateNo)
+        .orElseThrow(() -> new EntityNotFoundException("Estimate calculation not found"));
+
     // 짐 목록 조회
     List<MoveItems> moveItems = moveItemsRepository.findByEstimateNo(estimateNo);
     log.info("[짐 목록 조회] estimateNo = {}, 항목 수 = {}", estimateNo, moveItems.size());
@@ -123,8 +129,8 @@ public class GuestEstimateService {
     // 물품별 단가 및 추가금 구성
     List<SaveEstimatePriceRequest> itemPriceDetails = moveItems.stream()
         .map(item -> {
-          List<MoveItemExtraCharge> extraList = moveItemExtraChargeRepository.findByItemTypeId(item.getId());
-          log.debug("[물품 추가금] itemId = {}, 추가금 개수 = {}", item.getId(), extraList.size());
+          List<MoveItemExtraCharge> extraList = moveItemExtraChargeRepository.findByItemTypeId(item.getItemTypeId());
+          log.info("[물품 추가금] itemId = {}, 추가금 개수 = {}", item.getItemTypeId(), extraList.size());
 
           List<ExtraChargeRequest> extraChargeRequests = extraList.stream()
               .map(extra -> {
@@ -174,39 +180,8 @@ public class GuestEstimateService {
         .ownerMessage(estimate.getOwnerMessage())
         .itemPriceDetails(itemPriceDetails)
         .extraCharges(extraCharges)
-        .totalPrice(estimate.getTotalPrice())
+        .totalPrice(calculation.getFinalTotalPrice())
 
         .build();
   }
-
-  @Transactional
-  public void handleCustomerResponse(Long estimateNo, boolean accepted) {
-    Estimate estimate = estimateRepository.findById(estimateNo)
-        .orElseThrow(() -> new EntityNotFoundException("견적서가 존재하지 않습니다. id=" + estimateNo));
-
-    if (accepted) {
-      // 견적 수락: 상태 변경
-      estimate.setStatus(EstimateStatus.ACCEPTED);
-      estimateRepository.save(estimate);
-      log.info("[견적 수락 완료] estimateNo = {}", estimateNo);
-    } else {
-      // 관련 엔티티 삭제
-      log.info("[견적 거절 처리 시작] estimateNo = {}", estimateNo);
-
-      // MoveItems 삭제
-      List<MoveItems> moveItems = moveItemsRepository.findByEstimateNo(estimateNo);
-      for (MoveItems item : moveItems) {
-        moveItemExtraChargeRepository.deleteByItemTypeId(item.getId()); // 물품별 추가금
-      }
-      moveItemsRepository.deleteByEstimateNo(estimateNo); // 짐 항목
-
-      // 기타 추가금 삭제
-      estimateExtraChargeRepository.deleteByEstimateNo(estimateNo);
-
-      // 견적서 삭제
-      estimateRepository.delete(estimate);
-      log.info("[견적 거절 - 전체 삭제 완료] estimateNo = {}", estimateNo);
-    }
-  }
-
 }
