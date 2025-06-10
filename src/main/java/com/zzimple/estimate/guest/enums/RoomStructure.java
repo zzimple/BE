@@ -7,7 +7,5 @@ public enum RoomStructure {
   ONE_ROOM,
   ONE_HALF_ROOM,
   TWO_ROOM,
-  THREE_ROOM,
-  FOUR_ROOM,
-  FIVE_OR_MORE;
+  THREE_ROOM_OR_MORE;
 }
