@@ -29,14 +29,17 @@ public class Staff extends BaseTimeEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "id", nullable = false, unique = true)
-  private Long id;
+  @Column(name = "staff_id", nullable = false, unique = true)
+  private Long staffId;
 
   @Column(name = "user_id", nullable = false)
   private Long userId;
 
   @Column(name = "owner_id", nullable = false)
   private Long ownerId;
+
+  @Column(name = "store_id", nullable = false)
+  private Long storeId;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)

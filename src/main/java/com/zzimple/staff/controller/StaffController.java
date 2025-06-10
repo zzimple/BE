@@ -68,10 +68,10 @@ public class StaffController {
 
     Long ownerId = user.getUserId();
 
-    log.info("[사장님 승인] 사장님 승인 요청 - staffId: {}, ownerId: {}", request.getUserId(), ownerId);
+    log.info("[사장님 승인] 사장님 승인 요청 - staffId: {}, ownerId: {}", request.getStaffId(), ownerId);
 
     // 서비스에서 상태 반환받기
-    Status resultStatus = staffService.approveStaff(request.getUserId(), request.getStatus(), ownerId);
+    Status resultStatus = staffService.approveStaff(request.getStaffId(), request.getStatus(), ownerId);
 
     // 메시지 결정
     String message = switch (resultStatus) {
@@ -91,10 +91,12 @@ public class StaffController {
   @GetMapping("/list")
   @PreAuthorize("hasRole('OWNER')")
   public ResponseEntity<BaseResponse<List<StaffListResponse>>> getStaffList(
-      @AuthenticationPrincipal CustomUserDetails user
+      @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
-    Long ownerId = user.getUserId();
-    List<StaffListResponse> staffList = staffService.getStaffListByOwner(ownerId);
+
+    Long storeId = userDetails.getStoreId();
+
+    List<StaffListResponse> staffList = staffService.getStaffListByOwner(storeId);
     return ResponseEntity.ok(BaseResponse.success("조회 성공", staffList));
   }
 
