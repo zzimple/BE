@@ -1,5 +1,6 @@
 package com.zzimple.estimate.guest.dto.response;
 
+import com.zzimple.estimate.guest.enums.EstimateStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,5 +10,5 @@ import lombok.Getter;
 @AllArgsConstructor
 public class GuestEstimateRespondResult {
   private Long estimateNo;
-  private boolean accepted;
+  private EstimateStatus status;
 }
