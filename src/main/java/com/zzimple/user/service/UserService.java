@@ -121,22 +121,35 @@ public class UserService {
 
       List<String> roles = List.of(user.getRole().name());
       String accessToken;
+
       Long storeId = null;
+      Long ownerId = null;
 
-      // 사장님일 경우에만 storeId 추출
+//      // 사장님일 경우에만 storeId, ownerId 추출
+//      if (user.getRole() == UserRole.OWNER) {
+//        Owner owner = ownerRepository.findByUserId(user.getId())
+//            .orElseThrow(() -> new CustomException(OwnerErrorCode.OWNER_NOT_FOUND));
+//
+//        ownerId = owner.getId();
+//
+//        Store store = storeRepository.findByOwnerId(owner.getId())
+//            .orElseThrow(() -> new CustomException(OwnerErrorCode.STORE_NOT_FOUND));
+//
+//        storeId = store.getId();
+//      }
+
+      // 사장님일 경우에만 storeId, ownerId 추출 (1번 조회로 변경) 🔥 수정
       if (user.getRole() == UserRole.OWNER) {
-        Owner owner = ownerRepository.findByUserId(user.getId())
-            .orElseThrow(() -> new CustomException(OwnerErrorCode.OWNER_NOT_FOUND));
-
-        Store store = storeRepository.findByOwnerId(owner.getId())
+        Store store = storeRepository.findByOwnerUserId(user.getId())  // 🔥 userId로 한 번에 조회
             .orElseThrow(() -> new CustomException(OwnerErrorCode.STORE_NOT_FOUND));
 
-        storeId = store.getId();
+        storeId = store.getId();             // 🔥 가게 ID 세팅
+        ownerId = store.getOwnerId();        // 🔥 사장님 PK(ID) 세팅
       }
 
       // 3. 토큰 생성
       accessToken = (storeId != null)
-          ? jwtUtil.createAccessToken(user.getLoginId(), roles, storeId)
+          ? jwtUtil.createAccessToken(user.getLoginId(), roles, storeId, ownerId)
           : jwtUtil.createAccessToken(user.getLoginId(), roles); // 오버로드 버전 필요
 
       String refreshToken = jwtUtil.createRefreshToken(user.getLoginId());

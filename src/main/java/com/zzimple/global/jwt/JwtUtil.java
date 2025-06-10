@@ -48,7 +48,7 @@ public class JwtUtil {
   }
 
   // Access Token 발급 부분 - 사장
-  public String createAccessToken(String loginId, List<String> roles, Long storeId) {
+  public String createAccessToken(String loginId, List<String> roles, Long storeId, Long ownerId) {
     Date now = new Date();
     Date expireTime = new Date(now.getTime() + ACCESS_TOKEN_EXPIRE_TIME);
     Key key = getSigningKey();
@@ -57,6 +57,7 @@ public class JwtUtil {
         .setSubject(loginId)
         .claim("roles", roles)
         .claim("storeId", storeId)
+        .claim("ownerId", ownerId)
         .setIssuedAt(new Date())
         .setExpiration(expireTime)
         .signWith(key, SignatureAlgorithm.HS256)
