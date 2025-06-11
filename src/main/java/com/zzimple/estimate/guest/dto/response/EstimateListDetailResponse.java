@@ -53,4 +53,11 @@ public class EstimateListDetailResponse {
   private List<SaveEstimatePriceRequest.ExtraChargeRequest> extraCharges;
 
   private Integer totalPrice;
+
+  @Getter
+  @Setter
+  public class AssignedStaffResponse {
+    private Long staffId;
+    private String staffName;
+  }
 }

@@ -42,18 +42,6 @@ public class GuestEstimateController {
     return ResponseEntity.ok(BaseResponse.success(response));
   }
 
-  @GetMapping("/estimate/{estimateNo}")
-  @Operation(
-      summary = "[고객 | 토큰 O 사장님에게 온 견적서 상세 조회]",
-      description = "사장님이 보낸 확정 견적서의 상세 정보를 고객이 확인합니다."
-  )
-  public ResponseEntity<BaseResponse<EstimateListDetailResponse>> getEstimateDetail(
-      @PathVariable Long estimateNo
-  ) {
-    EstimateListDetailResponse response = guestEstimateService.getEstimateDetail(estimateNo);
-    return ResponseEntity.ok(BaseResponse.success(response));
-  }
-
   @PostMapping("/estimates/{estimateNo}/respond")
   @Operation(
       summary = "[고객 | 토큰 O 사장님에게 온 견적서 수락/거절]",
