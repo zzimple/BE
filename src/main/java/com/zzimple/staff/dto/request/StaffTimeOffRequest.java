@@ -1,5 +1,6 @@
 package com.zzimple.staff.dto.request;
 
+import com.zzimple.staff.enums.TimeOffType;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,5 +14,6 @@ import lombok.NoArgsConstructor;
 public class StaffTimeOffRequest {
   private LocalDate startDate;
   private LocalDate endDate;
+  private TimeOffType type;
   private String reason;
 }
