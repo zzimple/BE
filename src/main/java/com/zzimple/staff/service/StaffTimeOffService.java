@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
@@ -60,6 +61,7 @@ public class StaffTimeOffService {
         .storeId(storeId)
         .startDate(request.getStartDate())
         .endDate(request.getEndDate())
+        .type(request.getType())
         .reason(request.getReason())
         .status(Status.PENDING)
         .build();
@@ -76,47 +78,9 @@ public class StaffTimeOffService {
         staffTimeOff.getStatus(),
         staffTimeOff.getStartDate(),
         staffTimeOff.getEndDate(),
+        staffTimeOff.getType(),
         staffTimeOff.getReason()
     );
-  }
-
-  // 직원 요청 목록
-  @Transactional(readOnly = true)
-  public PagedResponse<StaffTimeOffResponse> listPending(Long userId, int page, int size) {
-
-    // 1) owner의 userId로 매장 조회
-    Store store = storeRepository.findByOwnerUserId(userId)
-        .orElseThrow(() -> {
-          log.warn("매장 정보 없음 - ownerUserId: {}", userId);
-          return new EntityNotFoundException("해당 owner의 매장을 찾을 수 없습니다.");
-        });
-
-    Long storeId = store.getId();
-    log.info("매장 조회 완료 - storeId: {}", storeId);
-
-    // 2) Pageable 생성 (요청일 기준 내림차순 정렬)
-    Pageable pageable = PageRequest.of(page, size);
-
-    // 3) 페이징으로 한 번에 조회
-    Page<StaffTimeOff> pageResult =
-        staffTimeOffepository.findByStoreIdAndStatus(storeId, Status.PENDING, pageable);
-
-    // 4) 엔티티 → DTO 변환
-    List<StaffTimeOffResponse> content = pageResult.getContent()
-        .stream()
-        .map(this::toResponse)
-        .collect(Collectors.toList());
-    log.info("대기 중 휴무 요청 개수(페이징): {}", content.size());
-
-    // 5) PagedResponse 빌드
-    return PagedResponse.<StaffTimeOffResponse>builder()
-        .content(content)
-        .page(pageResult.getNumber())
-        .size(pageResult.getSize())
-        .totalElements(pageResult.getTotalElements())
-        .totalPages(pageResult.getTotalPages())
-        .last(pageResult.isLast())
-        .build();
   }
 
   // 엔티티 → DTO 변환
@@ -126,6 +90,7 @@ public class StaffTimeOffService {
         .staffName(e.getStaffName())
         .startDate(e.getStartDate())
         .endDate(e.getEndDate())
+        .type(e.getType())
         .reason(e.getReason())
         .status(e.getStatus())
         .build();
@@ -153,4 +118,65 @@ public class StaffTimeOffService {
     StaffTimeOff updated = staffTimeOffepository.save(reqeust_staffId);
     return toResponse(updated);
   }
+
+  // 사장 - 휴무 내역 리스트
+  private List<StaffTimeOffResponse> listByStoreAndStatus(Long userId, Status status) {
+
+    Store store = storeRepository.findByOwnerUserId(userId)
+        .orElseThrow(() -> {
+          log.warn("매장 정보 없음 - ownerUserId: {}", userId);
+          return new EntityNotFoundException("해당 owner의 매장을 찾을 수 없습니다.");
+        });
+
+    Long storeId = store.getId();
+
+    List<StaffTimeOff> timeOffs = staffTimeOffepository.findAllByStoreIdAndStatus(storeId, status);
+
+    return timeOffs.stream()
+        .map(StaffTimeOffResponse::from)
+        .collect(Collectors.toList());
+  }
+
+  public PagedResponse<StaffTimeOffResponse> listMyRequests(Long userId, int page, int size) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+    Staff staff = staffRepository.findByUserId(userId)
+        .orElseThrow(() -> {
+          return new EntityNotFoundException("해당 직원을 찾을 수 없습니다.");
+        });
+
+    Long staffId = staff.getStaffId();
+
+    Page<StaffTimeOff> pageResult = staffTimeOffepository.findByStaffId(staffId, pageable);
+
+    List<StaffTimeOffResponse> content = pageResult.getContent().stream()
+        .map(this::toResponse)
+        .collect(Collectors.toList());
+
+    return PagedResponse.<StaffTimeOffResponse>builder()
+        .content(content)
+        .page(pageResult.getNumber())
+        .size(pageResult.getSize())
+        .totalElements(pageResult.getTotalElements())
+        .totalPages(pageResult.getTotalPages())
+        .last(pageResult.isLast())
+        .build();
+  }
+
+
+  @Transactional(readOnly = true)
+  public List<StaffTimeOffResponse> listPendingRequests(Long userId) {
+    return listByStoreAndStatus(userId, Status.PENDING);
+  }
+
+  @Transactional(readOnly = true)
+  public List<StaffTimeOffResponse> listApprovedRequests(Long userId) {
+    return listByStoreAndStatus(userId, Status.APPROVED);
+  }
+
+  @Transactional(readOnly = true)
+  public List<StaffTimeOffResponse> listRejectedRequests(Long userId) {
+    return listByStoreAndStatus(userId, Status.REJECTED);
+  }
+
 }

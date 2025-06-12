@@ -6,14 +6,12 @@ import com.zzimple.global.jwt.CustomUserDetails;
 import com.zzimple.staff.dto.request.StaffTimeOffRequest;
 import com.zzimple.staff.dto.response.StaffTimeOffResponse;
 import com.zzimple.staff.enums.Status;
-import com.zzimple.staff.repository.StaffTimeOffepository;
 import com.zzimple.staff.service.StaffTimeOffService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -54,26 +52,6 @@ public class StaffTimeOffController {
     );
   }
 
-  // 직원 휴무 요청 목록 조회
-  @GetMapping("/pending")
-  @PreAuthorize("hasRole('OWNER')")
-  @Operation(
-      summary = "[ 사장 | 토큰 O ] 직원 휴무 리스트",
-      description = "직원 휴무 요청 온 리스트"
-  )
-  public ResponseEntity<BaseResponse<PagedResponse<StaffTimeOffResponse>>> getPendingRequests(
-      @RequestParam int page,
-      @RequestParam int size,
-      @AuthenticationPrincipal CustomUserDetails user
-  ) {
-
-    Long userId = user.getUserId();
-
-    PagedResponse<StaffTimeOffResponse> responseList = staffTimeOffService.listPending(userId, page, size);
-
-    return ResponseEntity.ok(BaseResponse.success("휴무 요청 목록 조회 성공", responseList));
-  }
-
   // 휴무 요청 승인/거절
   @PatchMapping("/decide/{staffTimeOffId}")
   @PreAuthorize("hasRole('OWNER')")
@@ -86,5 +64,62 @@ public class StaffTimeOffController {
     Long storeId = userDetails.getStoreId();
     StaffTimeOffResponse response = staffTimeOffService.decide(staffTimeOffId, status, storeId);
     return ResponseEntity.ok(BaseResponse.success("요청 처리 완료", response));
+  }
+
+  // 본인 휴무 내역 조회
+  @Operation(
+      summary = "[ 직원 | 토큰 O ] 본인 휴무 내역 조회",
+      description = "로그인한 직원이 자신이 신청한 휴무 내역을 페이징 조회합니다."
+  )
+  @GetMapping("/me")
+  @PreAuthorize("hasRole('STAFF')")
+  public PagedResponse<StaffTimeOffResponse> getMyTimeOff(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+
+    Long userId = userDetails.getUserId();
+
+    return staffTimeOffService.listMyRequests(userId, page, size);
+  }
+
+  @Operation(summary = "[사장 | 토큰 O] 대기중 휴무 요청 조회")
+  @GetMapping("/list/pending")
+  @PreAuthorize("hasRole('OWNER')")
+  public ResponseEntity<BaseResponse<List<StaffTimeOffResponse>>> pending(
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+
+    Long userId = user.getUserId();
+
+    return ResponseEntity.ok(
+        BaseResponse.success("대기중 휴무 요청 조회", staffTimeOffService.listPendingRequests(userId))
+    );
+  }
+
+  @Operation(summary = "[사장 | 토큰 O] 승인된 휴무 요청 조회")
+  @GetMapping("/list/approved")
+  @PreAuthorize("hasRole('OWNER')")
+  public ResponseEntity<BaseResponse<List<StaffTimeOffResponse>>> approved(
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+    Long userId = user.getUserId();
+
+    return ResponseEntity.ok(
+        BaseResponse.success("승인된 휴무 요청 조회", staffTimeOffService.listApprovedRequests(userId))
+    );
+  }
+
+  @Operation(summary = "[사장 | 토큰 O] 거절된 휴무 요청 조회")
+  @GetMapping("/list/rejected")
+  @PreAuthorize("hasRole('OWNER')")
+  public ResponseEntity<BaseResponse<List<StaffTimeOffResponse>>> rejected(
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+    Long userId = user.getUserId();
+
+    return ResponseEntity.ok(
+        BaseResponse.success("거절된 휴무 요청 조회", staffTimeOffService.listRejectedRequests(userId))
+    );
   }
 }

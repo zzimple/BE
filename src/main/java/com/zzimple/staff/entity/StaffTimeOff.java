@@ -2,6 +2,7 @@ package com.zzimple.staff.entity;
 
 import com.zzimple.global.common.BaseTimeEntity;
 import com.zzimple.staff.enums.Status;
+import com.zzimple.staff.enums.TimeOffType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -38,6 +39,8 @@ public class StaffTimeOff extends BaseTimeEntity {
 
   private LocalDate startDate;
   private LocalDate endDate;
+
+  private TimeOffType type;
 
   private String reason;
 
