@@ -61,14 +61,25 @@ jobs:
         run: |
           echo "📦 Uploading zzimple-0.0.1-SNAPSHOT.jar to KT Cloud..."
 
-          sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no \
-            build/libs/zzimple-0.0.1-SNAPSHOT.jar \
-            $KT_USERNAME@$KT_HOST:/home/$KT_USERNAME/zzimple.jar
+          # ⬇️ 서버에서 해당 이름으로 실행되도록 수정
+          sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_HOST << 'EOF'
+            echo '🛑 Stopping existing zzimple process...'
+            PID=$(pgrep -f zzimple-0.0.1-SNAPSHOT.jar)
+            if [ -n "$PID" ]; then
+              kill -15 $PID
+              echo "🔁 Killed process $PID"
+              sleep 10
+            else
+              echo "✅ No existing zzimple process found"
+            fi
 
-          echo "🚀 Starting zzimple.jar on remote server..."
+            echo '🚀 Starting new zzimple-0.0.1-SNAPSHOT.jar...'
+            nohup java -jar zzimple-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev > app.log 2>&1 &
 
-          sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_HOST "
-            pgrep java | xargs -r kill -15  # 기존 Java 프로세스 종료
-            sleep 10
-            nohup java -jar /home/$KT_USERNAME/zzimple.jar --spring.profiles.active=dev > app.log 2>&1 &
-          "
+            sleep 5
+            echo '📡 Checking running process...'
+            ps aux | grep zzimple-0.0.1-SNAPSHOT.jar | grep -v grep
+
+            echo '📄 Showing last lines of app.log...'
+            tail -n 20 app.log
+          EOF
