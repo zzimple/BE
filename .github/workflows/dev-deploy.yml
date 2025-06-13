@@ -69,6 +69,6 @@ jobs:
 
           sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_HOST "
             pgrep java | xargs -r kill -15  # 기존 Java 프로세스 종료
-            sleep 5
+            sleep 10
             nohup java -jar /home/$KT_USERNAME/zzimple.jar --spring.profiles.active=dev > app.log 2>&1 &
           "
