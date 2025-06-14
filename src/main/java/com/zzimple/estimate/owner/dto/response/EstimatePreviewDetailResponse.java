@@ -24,6 +24,7 @@ public class EstimatePreviewDetailResponse {
 
   private Long estimateNo;
   private Long userId;
+
   private String moveDate;
   private MoveType moveType;
   private MoveOptionType optionType;
@@ -33,6 +34,12 @@ public class EstimatePreviewDetailResponse {
 
   private Address toAddress;
   private AddressDetailInfo toDetailInfo;
+
+  private Integer boxCount;
+
+  private int leftoverBoxCount;
+
+  private boolean elevator;
 
   private List<MoveItemPreviewDetailResponse> items;
 
@@ -53,6 +60,8 @@ public class EstimatePreviewDetailResponse {
         .items(moveItems.stream()
             .map(MoveItemPreviewDetailResponse::from) // 여기를 위해 아래 2번을 정의해야 함
             .toList())
+        .boxCount(estimate.getBoxCount())
+        .leftoverBoxCount(estimate.getLeftoverBoxCount())
         .build();
     }
 }

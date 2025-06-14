@@ -19,14 +19,22 @@ public class Address {
   @Column(name = "zip_no", nullable = false)
   private String zipNo;         // 우편번호
 
+  @Column(name = "entx", nullable = false)
+  private String entX;
+
+  @Column(name = "enty", nullable = false)
+  private String entY;
+
   @Column(name = "addr_detail")
   private String addrDetail;  // 상세 주소 (예: 101동 203호)
 
   // 그냥 값 보관용 객체라서 생성자 씀.
-  public Address(String roadFullAddr, String roadAddrPart1, String zipNo, String addrDetail) {
+  public Address(String roadFullAddr, String roadAddrPart1, String zipNo, String addrDetail, String entX, String entY) {
     this.roadFullAddr = roadFullAddr;
     this.roadAddrPart1 = roadAddrPart1;
     this.zipNo = zipNo;
     this.addrDetail = addrDetail;
+    this.entX = entX;
+    this.entY = entY;
   }
 }
