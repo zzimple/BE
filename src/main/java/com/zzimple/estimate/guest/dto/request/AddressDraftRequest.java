@@ -23,12 +23,20 @@ public class AddressDraftRequest {
   @Schema(description = "우편번호", example = "06142")
   private String zipNo;
 
+  @Schema(description = "X좌표")
+  private String entX;
+
+  @Schema(description = "Y좌표")
+  private String entY;
+
   public Address toEntity() {
     return new Address(
         this.getRoadFullAddr(),
         this.getRoadAddrPart1(),
         this.getZipNo(),
-        this.getAddrDetail()
+        this.getAddrDetail(),
+        this.getEntX(),
+        this.getEntY()
     );
   }
 }

@@ -40,7 +40,9 @@ public class Estimate extends BaseTimeEntity {
       @AttributeOverride(name = "roadFullAddr", column = @Column(name = "from_road_full_addr")),
       @AttributeOverride(name = "roadAddrPart1", column = @Column(name = "from_road_addr_part1")),
       @AttributeOverride(name = "zipNo", column = @Column(name = "from_zip_no")),
-      @AttributeOverride(name = "addrDetail", column = @Column(name = "from_addr_detail"))
+      @AttributeOverride(name = "addrDetail", column = @Column(name = "from_addr_detail")),
+      @AttributeOverride(name = "entX", column = @Column(name = "from_entx")),
+      @AttributeOverride(name = "entY", column = @Column(name = "from_enty"))
   })
   private Address fromAddress;
 
@@ -49,7 +51,9 @@ public class Estimate extends BaseTimeEntity {
       @AttributeOverride(name = "roadFullAddr", column = @Column(name = "to_road_full_addr")),
       @AttributeOverride(name = "roadAddrPart1", column = @Column(name = "to_road_addr_part1")),
       @AttributeOverride(name = "zipNo", column = @Column(name = "to_zip_no")),
-      @AttributeOverride(name = "addrDetail", column = @Column(name = "to_addr_detail"))
+      @AttributeOverride(name = "addrDetail", column = @Column(name = "to_addr_detail")),
+      @AttributeOverride(name = "entX", column = @Column(name = "to_entx")),
+      @AttributeOverride(name = "entY", column = @Column(name = "to_enty"))
   })
   private Address toAddress;
 
@@ -118,6 +122,10 @@ public class Estimate extends BaseTimeEntity {
 
   private Integer totalPrice;
 
+  private Integer boxCount;
+
+  private int leftoverBoxCount;
+
   // 정적 팩토리 메서드
   public static Estimate of(
       Long userId,
@@ -132,7 +140,9 @@ public class Estimate extends BaseTimeEntity {
       AddressDetailInfo toDetail,
       Boolean isGoodDay,
       Boolean isHoliday,
-      Boolean isWeekend
+      Boolean isWeekend,
+      Integer boxCount,
+      int leftoverBoxCount
   ) {
     Estimate estimate = new Estimate();
     estimate.userId = userId;
@@ -148,6 +158,8 @@ public class Estimate extends BaseTimeEntity {
     estimate.isGoodDay = isGoodDay;
     estimate.isHoliday = isHoliday;
     estimate.isWeekend = isWeekend;
+    estimate.boxCount = boxCount;
+    estimate.leftoverBoxCount = leftoverBoxCount;
     return estimate;
   }
 }
