@@ -6,6 +6,7 @@ import com.zzimple.staff.dto.request.OwnerApproveRequest;
 import com.zzimple.staff.dto.request.StaffsendApprovalRequest;
 import com.zzimple.staff.dto.response.OwnerApproveResponse;
 import com.zzimple.staff.dto.response.StaffListResponse;
+import com.zzimple.staff.dto.response.StaffProfileResponse;
 import com.zzimple.staff.dto.response.StaffsendApprovalResponse;
 import com.zzimple.staff.enums.Status;
 import com.zzimple.staff.service.StaffService;
@@ -100,4 +101,19 @@ public class StaffController {
     return ResponseEntity.ok(BaseResponse.success("조회 성공", staffList));
   }
 
+  @Operation(
+      summary = "[ 직원 | 토큰 O ] 직원 프로필 조회",
+      description = "직원 본인의 프로필을 조회합니다."
+  )
+  @GetMapping("/profile")
+  @PreAuthorize("hasRole('STAFF')")
+  public ResponseEntity<BaseResponse<StaffProfileResponse>> getStaffProfile(
+      @AuthenticationPrincipal CustomUserDetails user) {
+
+    Long userId = user.getUserId();
+
+    StaffProfileResponse profile = staffService.getStaffProfile(userId);
+
+    return ResponseEntity.ok(BaseResponse.success("직원 프로필 조회 성공", profile));
+  }
 }
