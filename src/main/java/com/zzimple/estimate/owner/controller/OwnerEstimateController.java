@@ -54,6 +54,21 @@ public class OwnerEstimateController {
   }
 
   @Operation(
+      summary = "[사장님 | 토큰 O | 물품 기본 단가 일괄 조회]",
+      description = "사장님이 등록한 모든 물품의 기본 단가를 조회합니다."
+  )
+  @GetMapping("/estimate/default-prices")
+  public ResponseEntity<BaseResponse<List<SaveItemBasePriceResponse>>> getBasePrices(
+      @AuthenticationPrincipal CustomUserDetails user
+  ) {
+
+    Long userId = user.getUserId();
+
+    List<SaveItemBasePriceResponse> response = saveItemBasePriceService.findAllByStoreId(userId);
+    return ResponseEntity.ok(BaseResponse.success("기본 단가 조회가 완료되었습니다.", response));
+  }
+
+  @Operation(
       summary = "[사장님 | 토큰 O | 마이페이지 추가요금 단가 저장]",
       description = "트럭/공휴일/손없는날/주말 단가 정보를 저장합니다."
   )
