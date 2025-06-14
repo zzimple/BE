@@ -183,4 +183,36 @@ public class UserService {
       throw new CustomException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
     }
   }
+
+  // 비밀번호 변경
+  @Transactional
+  public void updatePassword(Long userId, String currentPassword, String newPassword) {
+
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+    if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+      throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+    }
+
+    String encodedPassword = passwordEncoder.encode(newPassword); // 암호화
+    user.updatePassword(encodedPassword);
+  }
+
+  // 이메일 변경
+  @Transactional
+  public void updateEmail(Long userId, String email) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+    if (user.getEmail() != null && user.getEmail().equals(email)) {
+      return;
+    }
+
+    if (userRepository.existsByEmail(email)) {
+      throw new CustomException(UserErrorCode.EMAIL_ALREADY_EXISTS);
+    }
+
+    user.updateEmail(email);
+  }
 }

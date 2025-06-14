@@ -18,14 +18,18 @@ public class JusoCallbackController {
     String roadAddrPart1 = params.getOrDefault("roadAddrPart1", "");
     String addrDetail = params.getOrDefault("addrDetail", "");
     String zipNo = params.getOrDefault("zipNo", "");
+    String entX = params.getOrDefault("entX", "");
+    String entY = params.getOrDefault("entY", "");
 
     System.out.println("📮 [POST 콜백] 전달받은 주소:");
     System.out.println(" - roadFullAddr = " + roadFullAddr);
     System.out.println(" - roadAddrPart1 = " + roadAddrPart1);
     System.out.println(" - addrDetail = " + addrDetail);
     System.out.println(" - zipNo = " + zipNo);
+    System.out.println(" - entX = " + entX);
+    System.out.println(" - entY = " + entY);
 
-    redirectToFront(roadFullAddr, roadAddrPart1, addrDetail, zipNo, res);
+    redirectToFront(roadFullAddr, roadAddrPart1, addrDetail, zipNo, entX, entY, res);
   }
 
 // ✅ POST 방식 콜백 처리 (Map 방식으로 유연하게 처리)
@@ -35,29 +39,38 @@ public class JusoCallbackController {
     String roadAddrPart1 = params.getOrDefault("roadAddrPart1", "");
     String addrDetail = params.getOrDefault("addrDetail", "");
     String zipNo = params.getOrDefault("zipNo", "");
+    String entX = params.getOrDefault("entX", "");
+    String entY = params.getOrDefault("entY", "");
 
     System.out.println("📮 [POST 콜백] 전달받은 주소:");
     System.out.println(" - roadFullAddr = " + roadFullAddr);
     System.out.println(" - roadAddrPart1 = " + roadAddrPart1);
     System.out.println(" - addrDetail = " + addrDetail);
     System.out.println(" - zipNo = " + zipNo);
+    System.out.println(" - entX = " + entX);
+    System.out.println(" - entY = " + entY);
 
-    redirectToFront(roadFullAddr, roadAddrPart1, addrDetail, zipNo, res);
+    redirectToFront(roadFullAddr, roadAddrPart1, addrDetail, zipNo, entX, entY, res);
   }
 
 
   // ✅ 공통 리다이렉트 로직
-  private void redirectToFront(String fullAddr, String roadAddrPart1, String addrDetail, String zipNo, HttpServletResponse res) throws IOException {
+  private void redirectToFront(String fullAddr, String roadAddrPart1, String addrDetail, String zipNo, String entX, String entY, HttpServletResponse res) throws IOException {
     String safeFullAddr = fullAddr != null ? fullAddr : "";
     String safeRoadAddrPart1 = roadAddrPart1 != null ? roadAddrPart1 : "";
     String safeAddrDetail = addrDetail != null ? addrDetail : "";
     String safeZipNo = zipNo != null ? zipNo : "";
+    String safeEntX = entX != null ? entX : "";
+    String safeEntY = entY != null ? entY : "";
+
 
     String target = "http://localhost:3000/juso/callback"
         + "?roadFullAddr=" + URLEncoder.encode(safeFullAddr, StandardCharsets.UTF_8)
         + "&roadAddrPart1=" + URLEncoder.encode(safeRoadAddrPart1, StandardCharsets.UTF_8)
         + "&addrDetail=" + URLEncoder.encode(safeAddrDetail, StandardCharsets.UTF_8)
-        + "&zipNo=" + URLEncoder.encode(safeZipNo, StandardCharsets.UTF_8);
+        + "&zipNo=" + URLEncoder.encode(safeZipNo, StandardCharsets.UTF_8)
+        + "&entX=" + URLEncoder.encode(safeEntX, StandardCharsets.UTF_8)
+        + "&entY=" + URLEncoder.encode(safeEntY, StandardCharsets.UTF_8);
 
     res.sendRedirect(target);
   }

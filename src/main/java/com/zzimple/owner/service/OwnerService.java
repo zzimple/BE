@@ -1,5 +1,6 @@
 package com.zzimple.owner.service;
 
+import com.zzimple.owner.dto.response.OwnerProfileResponse;
 import com.zzimple.owner.exception.BusinessErrorCode;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.exception.GlobalErrorCode;
@@ -107,5 +108,17 @@ public class OwnerService {
       log.error("[회원가입] 회원가입 처리 중 예외 발생 - ID: {}", request.getB_no(), e);
       throw new CustomException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  // 사장님 프로필 조회
+  public OwnerProfileResponse getOwnerProfile(Long userId) {
+
+    Owner owner = ownerRepository.findByUserId(userId)
+        .orElseThrow(() -> new RuntimeException("Owner not found"));
+
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+    return new OwnerProfileResponse(user.getUserName(), user.getLoginId(), user.getEmail(), owner.getRoadFullAddr(), owner.getRoadAddrPart1(), owner.getAddrDetail(), owner.getZipNo());
   }
 }

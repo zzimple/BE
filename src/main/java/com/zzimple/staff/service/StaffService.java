@@ -8,6 +8,7 @@ import com.zzimple.owner.store.entity.Store;
 import com.zzimple.owner.store.exception.StoreErrorCode;
 import com.zzimple.owner.store.repository.StoreRepository;
 import com.zzimple.staff.dto.response.StaffListResponse;
+import com.zzimple.staff.dto.response.StaffProfileResponse;
 import com.zzimple.staff.exception.StaffErrorCode;
 import com.zzimple.staff.dto.request.StaffsendApprovalRequest;
 import com.zzimple.staff.dto.response.StaffsendApprovalResponse;
@@ -132,4 +133,37 @@ public class StaffService {
         .toList();
   }
 
+  // 직원프로필 조회
+  public StaffProfileResponse getStaffProfile(Long userId) {
+
+    // 1. 직원 유저 정보 가져오기
+    User staffUser = userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    // 2. 직원 정보 가져오기
+    Staff staff = staffRepository.findByUserId(userId)
+        .orElseThrow(() -> new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    // 3. 사장님 정보 가져오기
+    Owner owner = ownerRepository.findById(staff.getOwnerId())
+        .orElseThrow(() -> new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    // 4. 사장님 유저 정보 가져오기
+    User ownerUser = userRepository.findById(owner.getUserId())
+        .orElseThrow(() -> new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+
+    // 5. 가게 정보 가져오기
+    Store store = storeRepository.findByOwnerUserId(owner.getId())
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+
+    // 6. 응답 생성
+    return new StaffProfileResponse(
+        staffUser.getUserName(),
+        staffUser.getLoginId(),
+        staffUser.getEmail(),
+        ownerUser.getUserName(),
+        store.getName(),
+        ownerUser.getPhoneNumber()
+    );
+  }
 }

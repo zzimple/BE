@@ -26,7 +26,9 @@ public enum UserErrorCode implements BaseErrorCode {
 
   // 기타
   USER_NOT_FOUND("U008", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-  INVALID_INPUT("U009", "입력값이 유효하지 않습니다.", HttpStatus.BAD_REQUEST);
+  INVALID_INPUT("U009", "입력값이 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
+
+  EMAIL_ALREADY_EXISTS("U010", "이미 사용 중인 이메일입니다.", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final String message;
