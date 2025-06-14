@@ -7,6 +7,13 @@ import com.zzimple.estimate.owner.dto.response.SaveItemBasePriceResponse;
 import com.zzimple.estimate.owner.entity.MoveItemBasePrice;
 import com.zzimple.estimate.owner.repository.MoveItemBasePriceRepository;
 import com.zzimple.global.exception.CustomException;
+import com.zzimple.owner.entity.Owner;
+import com.zzimple.owner.repository.OwnerRepository;
+import com.zzimple.owner.store.entity.Store;
+import com.zzimple.owner.store.exception.StoreErrorCode;
+import com.zzimple.owner.store.repository.StoreRepository;
+import com.zzimple.staff.exception.StaffErrorCode;
+import com.zzimple.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -22,6 +29,9 @@ public class SaveItemBasePriceService {
 
   private final MoveItemBasePriceRepository basePriceRepository;
   private final ItemTypeRepository itemTypeRepository;
+  private final OwnerRepository ownerRepository;
+  private final StoreRepository storeRepository;
+  private final MoveItemBasePriceRepository moveItemBasePriceRepository;
 
   @Transactional
   public List<SaveItemBasePriceResponse> saveOrUpdateAll(Long storeId, List<SaveItemBasePriceRequest> requests) {
@@ -63,7 +73,6 @@ public class SaveItemBasePriceService {
     return responses;
   }
 
-
   @Transactional(readOnly = true)
   public List<SaveItemBasePriceResponse> getBasePrices(Long storeId, List<Long> itemTypeIds) {
     List<SaveItemBasePriceResponse> result = basePriceRepository
@@ -76,5 +85,24 @@ public class SaveItemBasePriceService {
     return result;
   }
 
+  // 해당 가게 짐 목록 단가 조회
+  public List<SaveItemBasePriceResponse> findAllByStoreId(Long userId) {
+
+    Owner owner = ownerRepository.findByUserId(userId)
+        .orElseThrow(() ->  new CustomException(StaffErrorCode.OWNER_NOT_FOUND));
+
+    Store store = storeRepository.findByOwnerUserId(owner.getId())
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+
+
+    Long storeId = store.getId();
+
+    // 3. Store ID로 기본 단가 조회
+    List<MoveItemBasePrice> prices = moveItemBasePriceRepository.findAllByStoreId(storeId);
+
+    return prices.stream()
+        .map(SaveItemBasePriceResponse::fromEntity)
+        .collect(Collectors.toList());
+  }
 }
 

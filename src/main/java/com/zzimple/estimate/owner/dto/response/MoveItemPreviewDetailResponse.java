@@ -23,6 +23,8 @@ public class MoveItemPreviewDetailResponse {
   @Schema(description = "짐 종류 ID")
   private Long itemTypeId;
 
+  private String itemTypeName;
+
   @Schema(description = "짐 카테고리", example = "FURNITURE")
   private MoveItemCategory category;
 
@@ -84,6 +86,7 @@ public class MoveItemPreviewDetailResponse {
     return MoveItemPreviewDetailResponse.builder()
         .id(item.getId())
         .itemTypeId(item.getItemTypeId())
+        .itemTypeName(item.getItemTypeName())
         .category(item.getCategory())
         .quantity(item.getQuantity())
         .type(item.getType())

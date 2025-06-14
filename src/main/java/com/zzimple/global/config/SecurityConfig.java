@@ -75,11 +75,11 @@ public class SecurityConfig {
                 // 개발 할 때만 풀어두기
 //                .requestMatchers("/estimates/draft/**").permitAll()
 
-                .requestMatchers("/juso/**").permitAll()
+                .requestMatchers("/juso/**", "/api/vision/**", "/kakao-navi/**").permitAll()
 
 
                 // 직원 전용 API
-                .requestMatchers("/staff/request", "/staff/time-off/request", "staff/time-off/me").hasRole("STAFF")
+                .requestMatchers("/staff/request", "/staff/time-off/request", "staff/time-off/me", "/staff/profile").hasRole("STAFF")
 
                 // 사장 전용 API
                 .requestMatchers("/staff/approve","/staff/list", "/estimates/owner/**", "/staff/time-off/pending", "/staff/time-off/decide/**", "/owner/schedule/**" ,"/staff/time-off/list/**").hasRole("OWNER")

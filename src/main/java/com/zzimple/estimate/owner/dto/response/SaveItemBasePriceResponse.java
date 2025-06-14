@@ -1,5 +1,6 @@
 package com.zzimple.estimate.owner.dto.response;
 
+import com.zzimple.estimate.owner.entity.MoveItemBasePrice;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,4 +23,12 @@ public class SaveItemBasePriceResponse {
 
   @Schema(description = "기본 금액", example = "80000")
   private int basePrice;
+
+  public static SaveItemBasePriceResponse fromEntity(MoveItemBasePrice entity) {
+    return new SaveItemBasePriceResponse(
+        entity.getItemTypeId(),
+        entity.getItemTypeName(),
+        entity.getBasePrice()
+    );
+  }
 }

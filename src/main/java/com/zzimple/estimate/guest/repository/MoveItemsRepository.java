@@ -1,6 +1,7 @@
 package com.zzimple.estimate.guest.repository;
 
 import com.zzimple.estimate.guest.entity.MoveItems;
+import com.zzimple.estimate.owner.entity.MoveItemBasePrice;
 import io.lettuce.core.dynamic.annotation.Param;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,10 +31,6 @@ public interface MoveItemsRepository extends JpaRepository<MoveItems, Long> {
       @Param("basePrice") Integer basePrice
   );
 
-
-  @Query("SELECT m.id FROM MoveItems m WHERE m.estimateNo = :estimateNo AND m.itemTypeId = :itemTypeId")
-  Long findIdByEstimateNoAndItemTypeIdOnly(
-      @Param("estimateNo") Long estimateNo,
-      @Param("itemTypeId") Long itemTypeId
-  );
+  @Query("SELECT m FROM MoveItemBasePrice m WHERE m.storeId = :storeId")
+  List<MoveItemBasePrice> findAllByStoreId(@Param("storeId") Long storeId);
 }
