@@ -1,14 +1,18 @@
 package com.zzimple.owner.controller;
 
 import com.zzimple.global.dto.BaseResponse;
+import com.zzimple.global.jwt.CustomUserDetails;
 import com.zzimple.owner.dto.request.OwnerLoginIdCheckRequest;
 import com.zzimple.owner.dto.request.OwnerSignUpRequest;
 import com.zzimple.owner.dto.response.OwnerLoginIdCheckResponse;
+import com.zzimple.owner.dto.response.OwnerProfileResponse;
 import com.zzimple.owner.dto.response.OwnerSignUpResponse;
 import com.zzimple.owner.service.OwnerService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -66,5 +70,14 @@ public class OwnerController {
       @RequestBody OwnerSignUpRequest request) {
     OwnerSignUpResponse result = ownerService.registerOwner(request);
     return ResponseEntity.ok(BaseResponse.success("회원가입이 완료되었습니다.", result));
+  }
+
+  @GetMapping("/profile")
+  public ResponseEntity<BaseResponse<OwnerProfileResponse>> getMyProfile(
+      @AuthenticationPrincipal CustomUserDetails user) {
+
+    OwnerProfileResponse response = ownerService.getOwnerProfile(user.getUserId());
+
+    return ResponseEntity.ok(BaseResponse.success("정보를 조회하였습니다", response));
   }
 }
