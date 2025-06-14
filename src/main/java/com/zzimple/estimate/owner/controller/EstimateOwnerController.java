@@ -5,6 +5,7 @@ import com.zzimple.estimate.owner.dto.request.EstimatePreviewRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SubmitFinalEstimateRequest;
 import com.zzimple.estimate.owner.dto.response.CalculateOwnerInputResponse;
+import com.zzimple.estimate.owner.dto.response.EstimateMoveItemsListResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewDetailResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResultResponse;
@@ -90,6 +91,12 @@ public class EstimateOwnerController {
     return ResponseEntity.ok(
         BaseResponse.success("공개 견적서 상세 조회 완료", detail)
     );
+  }
+
+  @GetMapping("/{estimateNo}/items")
+  public ResponseEntity<BaseResponse<EstimateMoveItemsListResponse>> getEstimateMoveItems(@PathVariable Long estimateNo) {
+    EstimateMoveItemsListResponse response = estimatePreviewDetailService.getEstimateMoveItemsList(estimateNo);
+    return ResponseEntity.ok(BaseResponse.success("짐 목록 리스트 조회 완료", response));
   }
 
   @Operation(
