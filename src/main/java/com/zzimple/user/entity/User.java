@@ -41,11 +41,19 @@ public class User extends BaseTimeEntity {
   @Column(name = "email", unique = true)
   private String email; // 이메일
 
+  public void updateEmail(String email) {
+    this.email = email;
+  }
+
   @Column(name = "login_id", nullable = false, unique = true)
   private String loginId; // 아이디
 
   @Column(name = "password")
   private String password;  // 비밀번호
+
+  public void updatePassword(String encodedPassword) {
+    this.password = encodedPassword;
+  }
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false)

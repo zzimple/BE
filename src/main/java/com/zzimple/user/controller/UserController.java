@@ -1,6 +1,9 @@
 package com.zzimple.user.controller;
 
 import com.zzimple.global.dto.BaseResponse;
+import com.zzimple.global.jwt.CustomUserDetails;
+import com.zzimple.user.dto.request.UpdateEmailRequest;
+import com.zzimple.user.dto.request.UpdatePasswordRequest;
 import com.zzimple.user.dto.request.UserLoginIdCheckRequest;
 import com.zzimple.user.dto.request.LoginRequest;
 import com.zzimple.user.dto.request.UserSignUpRequest;
@@ -14,6 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -86,5 +91,28 @@ public class UserController {
   public ResponseEntity<BaseResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response ) {
     LoginResponse result = userService.login(request, response);
     return ResponseEntity.ok(BaseResponse.success("로그인에 성공하였습니다.", result));
+  }
+
+  // 비밀번호 변경
+  @PatchMapping("/password")
+  public ResponseEntity<BaseResponse<String>> updatePassword(
+      @AuthenticationPrincipal CustomUserDetails user,
+      @RequestBody UpdatePasswordRequest request) {
+
+    Long userId = user.getUserId();
+
+    userService.updatePassword(userId, request.getCurrentPassword(), request.getNewPassword());
+    return ResponseEntity.ok(BaseResponse.success("비밀번호가 변경되었습니다."));
+  }
+
+  // 이메일 변경
+  @PatchMapping("/email")
+  public ResponseEntity<BaseResponse<String>> updateEmail(
+      @AuthenticationPrincipal CustomUserDetails user,
+      @RequestBody UpdateEmailRequest request) {
+    Long userId = user.getUserId();
+
+    userService.updateEmail(userId, request.getEmail());
+    return ResponseEntity.ok(BaseResponse.success("이메일이 변경되었습니다."));
   }
 }
