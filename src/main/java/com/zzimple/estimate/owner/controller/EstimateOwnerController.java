@@ -5,6 +5,7 @@ import com.zzimple.estimate.owner.dto.request.EstimatePreviewRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SubmitFinalEstimateRequest;
 import com.zzimple.estimate.owner.dto.response.CalculateOwnerInputResponse;
+import com.zzimple.estimate.owner.dto.response.EstimateItemWithExtraChargeResponse;
 import com.zzimple.estimate.owner.dto.response.EstimateMoveItemsListResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewDetailResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
@@ -99,20 +100,18 @@ public class EstimateOwnerController {
     return ResponseEntity.ok(BaseResponse.success("짐 목록 리스트 조회 완료", response));
   }
 
-  @Operation(
-      summary = "[사장님 | 토큰 O | 선택 항목 기본 단가 목록 조회]",
-      description = "고객이 선택한 짐 항목(itemTypeId)에 대해 사장님이 등록한 기본 단가 정보를 조회합니다."
-  )
-  @GetMapping("/default-prices")
-  public ResponseEntity<BaseResponse<List<SaveItemBasePriceResponse>>> getBasePrices(
+  @GetMapping("/with-extra/{estimateNo}")
+  public ResponseEntity<BaseResponse<List<EstimateItemWithExtraChargeResponse>>> getEstimateItemsWithExtras(
       @AuthenticationPrincipal CustomUserDetails userDetails,
-      @RequestParam List<Long> itemTypeIds
+      @PathVariable  Long estimateNo
   ) {
-    Long storeId = userDetails.getStoreId();
-
-    List<SaveItemBasePriceResponse> response = saveItemBasePriceService.getBasePrices(storeId,
-        itemTypeIds);
-    return ResponseEntity.ok(BaseResponse.success("사장님 단가 불러오기 성공", response));
+    Long userId = userDetails.getUserId();
+    List<EstimateItemWithExtraChargeResponse> response =
+        saveItemBasePriceService.getItemsWithExtrasByEstimateNo(estimateNo, userId);
+    return ResponseEntity.ok(BaseResponse.success(
+        "해당 견적서의 짐 목록 및 추가금 조회 성공",
+        response
+    ));
   }
 
   @Operation(
