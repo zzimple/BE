@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "estimate_calculation")
+@Table(
+    name = "estimate_calculation",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_estimate_calculation_estimate_no",
+        columnNames = "estimate_no"
+    )
+)
 public class EstimateCalculation extends BaseTimeEntity {
 
   @Id
