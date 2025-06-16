@@ -64,14 +64,8 @@ jobs:
           # ⬇️ 서버에서 해당 이름으로 실행되도록 수정
           sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_HOST << 'EOF'
             echo '🛑 Stopping existing zzimple process...'
-            PID=$(pgrep -f zzimple-0.0.1-SNAPSHOT.jar)
-            if [ -n "$PID" ]; then
-              kill -15 $PID
-              echo "🔁 Killed process $PID"
-              sleep 10
-            else
-              echo "✅ No existing zzimple process found"
-            fi
+            sudo pgrep java | xargs -r sudo kill -15
+            sleep 10
 
             echo '🚀 Starting new zzimple-0.0.1-SNAPSHOT.jar...'
             nohup java -jar zzimple-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev > app.log 2>&1 &
