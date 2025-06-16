@@ -10,12 +10,15 @@ import com.zzimple.estimate.guest.enums.MoveItemCategory;
 import com.zzimple.estimate.guest.repository.MoveItemsRepository;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest.ExtraChargeRequest;
+import com.zzimple.estimate.owner.dto.response.MoveItemPreviewDetailResponse;
 import com.zzimple.estimate.owner.entity.EstimateCalculation;
 import com.zzimple.estimate.owner.entity.MoveItemExtraCharge;
+import com.zzimple.estimate.owner.entity.StorePriceSetting;
 import com.zzimple.estimate.owner.repository.EstimateCalculationRepository;
 import com.zzimple.estimate.owner.repository.EstimateExtraChargeRepository;
 import com.zzimple.estimate.owner.repository.EstimateRepository;
 import com.zzimple.estimate.owner.repository.MoveItemExtraChargeRepository;
+import com.zzimple.estimate.owner.repository.StorePriceSettingRepository;
 import com.zzimple.owner.entity.Owner;
 import com.zzimple.owner.repository.OwnerRepository;
 import com.zzimple.owner.store.entity.Store;
@@ -51,6 +54,7 @@ public class GuestEstimateService {
   private final OwnerRepository ownerRepository;
   private final UserRepository userRepository;
   private final EstimateCalculationRepository estimateCalculationRepository;
+  private final StorePriceSettingRepository storePriceSettingRepository;
 
   // 사장님에게 견적서 요청 온거 미리보기
   public PagedResponse<EstimateListResponse> getAcceptedEstimatesForUser(Long userId, int page, int size) {
@@ -102,16 +106,20 @@ public class GuestEstimateService {
     return ampm + " " + displayHour + ":" + String.format("%02d", minute);
   }
 
-  // 사장님한테 온 견적서 상세보기
+  // 최종 견적서 상세보기
   @Transactional(readOnly = true)
   public EstimateListDetailResponse getEstimateDetail(Long estimateNo) {
-    log.info("[견적 상세조회] estimateNo = {}", estimateNo);
+    log.info("[최종 견적 상세조회] estimateNo = {}", estimateNo);
 
     Estimate estimate = estimateRepository.findById(estimateNo)
         .orElseThrow(() -> new EntityNotFoundException("견적서를 찾을 수 없습니다. id=" + estimateNo));
 
     Store store = storeRepository.findById(estimate.getStoreId())
         .orElseThrow(() -> new EntityNotFoundException("Store not found"));
+
+    // StorePriceSetting 조회
+    StorePriceSetting setting = storePriceSettingRepository.findById(store.getId())
+        .orElseThrow(() -> new EntityNotFoundException("StorePriceSetting not found for storeId=" + store.getId()));
 
     Owner owner = ownerRepository.findById(store.getOwnerId())
         .orElseThrow(() -> new EntityNotFoundException("Owner not found"));
@@ -129,8 +137,8 @@ public class GuestEstimateService {
     // 물품별 단가 및 추가금 구성
     List<SaveEstimatePriceRequest> itemPriceDetails = moveItems.stream()
         .map(item -> {
-          List<MoveItemExtraCharge> extraList = moveItemExtraChargeRepository.findByItemTypeId(item.getItemTypeId());
-          log.info("[물품 추가금] itemId = {}, 추가금 개수 = {}", item.getItemTypeId(), extraList.size());
+          List<MoveItemExtraCharge> extraList =
+              moveItemExtraChargeRepository.findByEstimateNoAndItemTypeId(estimateNo, item.getItemTypeId());          log.info("[물품 추가금] itemId = {}, 추가금 개수 = {}", item.getItemTypeId(), extraList.size());
 
           List<ExtraChargeRequest> extraChargeRequests = extraList.stream()
               .map(extra -> {
@@ -142,6 +150,7 @@ public class GuestEstimateService {
 
           return SaveEstimatePriceRequest.builder()
               .itemTypeId(item.getItemTypeId())
+              .itemTypeName(item.getItemTypeName())
               .quantity(item.getQuantity())
               .basePrice(item.getBasePrice())
               .extraCharges(extraChargeRequests)
@@ -169,6 +178,7 @@ public class GuestEstimateService {
         .ownerPhone(user.getPhoneNumber())
         .userId(estimate.getUserId())
         .moveDate(estimate.getMoveDate())
+        .moveTime(estimate.getMoveTime())
         .moveType(estimate.getMoveType())
         .optionType(estimate.getOptionType())
         .fromAddress(estimate.getFromAddress())
@@ -177,10 +187,17 @@ public class GuestEstimateService {
         .toDetailInfo(estimate.getToDetail())
         .customerMemo(estimate.getCustomerMemo())
         .truckCount(estimate.getTruckCount())
+        .truckTotalPrice(setting.getPerTruckCharge() * estimate.getTruckCount())
         .ownerMessage(estimate.getOwnerMessage())
         .itemPriceDetails(itemPriceDetails)
         .extraCharges(extraCharges)
+        .items(moveItems.stream()
+            .map(MoveItemPreviewDetailResponse::from) // 예시 변환 메서드
+            .toList())
         .totalPrice(calculation.getFinalTotalPrice())
+        .holidayCharge(estimate.getIsHoliday() ? setting.getHolidayCharge() : null)
+        .goodDayCharge(estimate.getIsGoodDay() ? setting.getGoodDayCharge() : null)
+        .weekendCharge(estimate.getIsWeekend() ? setting.getWeekendCharge() : null)
 
         .build();
   }
