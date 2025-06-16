@@ -19,6 +19,9 @@ public class SaveEstimatePriceRequest {
   @Schema(description = "짐 종류 ID", example = "1001")
   private Long itemTypeId;
 
+  private String itemTypeName;
+
+
   @Schema(description = "수량", example = "1")
   private int quantity;
 
