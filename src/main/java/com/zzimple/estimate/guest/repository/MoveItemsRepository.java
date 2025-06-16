@@ -33,4 +33,5 @@ public interface MoveItemsRepository extends JpaRepository<MoveItems, Long> {
 
   @Query("SELECT m FROM MoveItemBasePrice m WHERE m.storeId = :storeId")
   List<MoveItemBasePrice> findAllByStoreId(@Param("storeId") Long storeId);
+  List<MoveItems> findByEstimateNoAndStoreId(Long estimateNo, Long storeId);
 }

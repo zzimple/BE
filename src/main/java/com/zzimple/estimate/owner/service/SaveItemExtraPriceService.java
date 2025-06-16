@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,8 @@ public class SaveItemExtraPriceService {
           estimateNo, storeId, request.getItemTypeId());
       // 2-1) estimateNo + storeId + itemTypeId 로 DB PK(itemId)만 조회 (findByEstimateNoAndItemTypeId 커스텀 메서드 필요)
       Long itemId = request.getItemTypeId();
+
+      moveItemExtraChargeRepository.deleteByEstimateNoAndStoreIdAndItemTypeId(estimateNo, storeId, itemId);
 
       // 2-3) 새 옵션 리스트 insert
       if (request.getExtraCharges() != null) {
@@ -111,8 +114,10 @@ public class SaveItemExtraPriceService {
   }
 
   private int calculateBaseTotal(MoveItems item) {
-    return item.getBasePrice() * item.getQuantity();
+    Integer base = item.getBasePrice();
+    return base != null ? base : 0;
   }
+
 
   private int calculateExtraTotal(Long estimateNo, Long storeId, Long itemTypeId) {
     return moveItemExtraChargeRepository

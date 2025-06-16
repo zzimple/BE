@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EstimateCalculationRepository extends JpaRepository<EstimateCalculation, Long> {
   Optional<EstimateCalculation> findByEstimateNo(Long estimateNo);
+  Optional<EstimateCalculation> findFirstByEstimateNo(Long estimateNo);
 }

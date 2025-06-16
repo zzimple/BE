@@ -98,15 +98,11 @@ public class EstimateDetailUpdateService {
 
   @Transactional
   public CalculateOwnerInputResponse calculateAndSaveFinalTotals(Long storeId, Long estimateNo) {
-    // 1) EstimateCalculation 조회 또는 새로 생성
-    EstimateCalculation estimateCalculation = estimateCalculationRepository.findByEstimateNo(
-            estimateNo)
-        .orElseGet(() -> {
-          EstimateCalculation e = new EstimateCalculation();
-          e.setEstimateNo(estimateNo);
-          e.setStoreId(storeId);
-          return e;
-        });
+    EstimateCalculation estimateCalculation = estimateCalculationRepository
+        .findFirstByEstimateNo(estimateNo)
+        .orElseThrow(() ->
+            new EntityNotFoundException("EstimateCalculation not found for estimateNo=" + estimateNo)
+        );
 
     // 2) DB에서 items_total_price 꺼내기
     int itemsTotal = estimateCalculation.getItemsTotalPrice();

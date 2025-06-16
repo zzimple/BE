@@ -2,6 +2,7 @@ package com.zzimple.estimate.owner.service;
 
 import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.guest.entity.MoveItems;
+import com.zzimple.estimate.guest.enums.MoveItemCategory;
 import com.zzimple.estimate.guest.repository.MoveItemsRepository;
 import com.zzimple.estimate.owner.dto.response.EstimateMoveItemsListResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewDetailResponse;
@@ -26,7 +27,19 @@ public class EstimatePreviewDetailService {
 
     List<MoveItems> moveItems = moveItemsRepository.findByEstimateNo(estimateNo);
 
-    return EstimatePreviewDetailResponse.fromEntity(estimate, moveItems);
+    long furnitureCount = moveItems.stream()
+        .filter(i -> i.getCategory() == MoveItemCategory.FURNITURE)
+        .count();
+
+    long applianceCount = moveItems.stream()
+        .filter(i -> i.getCategory() == MoveItemCategory.APPLIANCE)
+        .count();
+
+    long otherCount = moveItems.stream()
+        .filter(i -> i.getCategory() == MoveItemCategory.OTHER)
+        .count();
+
+    return EstimatePreviewDetailResponse.fromEntity(estimate, moveItems,  (int) furnitureCount, (int) applianceCount, (int) otherCount);
   }
 
   // 견적서 물품 조회

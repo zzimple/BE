@@ -12,4 +12,8 @@ public interface MoveItemExtraChargeRepository extends JpaRepository<MoveItemExt
           Long storeId,
           Long itemTypeId
       );
+  List<MoveItemExtraCharge> findByEstimateNo(Long estimateNo);
+  List<MoveItemExtraCharge> findByEstimateNoAndItemTypeIdIn(Long estimateNo, List<Long> itemTypeIds);
+  void deleteByEstimateNoAndStoreIdAndItemTypeId(Long estimateNo, Long storeId, Long itemTypeId);
+  List<MoveItemExtraCharge> findByEstimateNoAndItemTypeId(Long estimateNo, Long itemTypeId);
 }

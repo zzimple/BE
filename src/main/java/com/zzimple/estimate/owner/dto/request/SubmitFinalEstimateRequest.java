@@ -23,9 +23,6 @@ public class SubmitFinalEstimateRequest {
   @Schema(description = "사장님이 고객에게 전달할 메시지", example = "이사 당일 안전하게 도와드리겠습니다!")
   private String ownerMessage;
 
-  @Schema(description = "물품 및 단가 + 추가금 리스트")
-  private List<SaveEstimatePriceRequest> items;
-
   @Schema(description = "기타 추가금 항목 리스트 (사유 + 금액)")
   private List<ExtraChargeRequest> extraCharges;
 
