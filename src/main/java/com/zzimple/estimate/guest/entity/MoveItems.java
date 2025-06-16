@@ -50,7 +50,7 @@ public class MoveItems extends BaseTimeEntity {
   private int quantity;
 
   @Column(nullable = true, columnDefinition = "INT DEFAULT 0")
-  private Integer basePrice;
+  private Integer basePrice = 0;
 
   private String type;
   private String width;
