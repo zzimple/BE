@@ -61,6 +61,13 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
 	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.18.3'
+
+	implementation 'com.google.cloud:google-cloud-vision:3.26.0'
+
+	implementation "org.locationtech.proj4j:proj4j:1.1.0"
+
+	implementation 'com.google.protobuf:protobuf-java:3.25.3'
+
 }
 
 tasks.named('test') {

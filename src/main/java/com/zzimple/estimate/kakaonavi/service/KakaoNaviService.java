@@ -2,6 +2,9 @@ package com.zzimple.estimate.kakaonavi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zzimple.estimate.coordinate.CoordinateConverter;
+import com.zzimple.estimate.guest.entity.Address;
+import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.kakaonavi.dto.request.KakaoRouteRequest;
 import com.zzimple.estimate.kakaonavi.dto.response.KakaoRouteResponse;
 import com.zzimple.estimate.kakaonavi.dto.response.KakaoRouteResponse.Mark;
@@ -120,4 +123,33 @@ public class KakaoNaviService {
       throw new IllegalStateException("카카오 경로 정보를 가져오는 데 실패했습니다.");
     }
   }
+
+  public KakaoRouteResponse getRouteFromEstimate(Estimate estimate) {
+    // 1. 주소 객체 꺼내기
+    Address from = estimate.getFromAddress();
+    Address to = estimate.getToAddress();
+
+    // 2. 문자열 좌표 → double 파싱
+    double fromX = Double.parseDouble(from.getEntX());
+    double fromY = Double.parseDouble(from.getEntY());
+    double toX = Double.parseDouble(to.getEntX());
+    double toY = Double.parseDouble(to.getEntY());
+
+    // 3. 변환: TM → WGS84
+    double[] fromLatLng = CoordinateConverter.convertToWGS84(fromX, fromY);
+    double[] toLatLng = CoordinateConverter.convertToWGS84(toX, toY);
+
+    // 4. "경도,위도" 문자열 조립
+    String origin = toCoordString(fromLatLng);      // e.g., "127.123456,37.123456"
+    String destination = toCoordString(toLatLng);
+
+    // 5. 요청 DTO 생성 후 서비스 호출
+    KakaoRouteRequest request = new KakaoRouteRequest(origin, destination);
+    return getRoute(request); // 기존 메서드 호출
+  }
+
+  private String toCoordString(double[] latLng) {
+    return latLng[1] + "," + latLng[0]; // lng,lat
+  }
+
 }
