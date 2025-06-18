@@ -4,9 +4,11 @@ import com.zzimple.estimate.guest.dto.response.PagedResponse;
 import com.zzimple.estimate.owner.dto.request.EstimatePreviewRequest;
 import com.zzimple.estimate.owner.dto.request.SaveItemBasePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SaveStorePriceSettingRequest;
+import com.zzimple.estimate.owner.dto.response.EstimateConfirmedResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
 import com.zzimple.estimate.owner.dto.response.SaveItemBasePriceResponse;
 import com.zzimple.estimate.owner.dto.response.StorePriceSettingResponse;
+import com.zzimple.estimate.owner.service.EstimateConfirmedService;
 import com.zzimple.estimate.owner.service.EstimatePreviewService;
 import com.zzimple.estimate.owner.service.SaveItemBasePriceService;
 import com.zzimple.estimate.owner.service.StorePriceSettingService;
@@ -31,11 +33,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/owner/my")
 @RequiredArgsConstructor
-public class OwnerEstimateController {
+public class EstimateOwnerPageController {
 
   private final SaveItemBasePriceService saveItemBasePriceService;
   private final StorePriceSettingService storePriceSettingService;
   private final EstimatePreviewService estimatePreviewService;
+  private final EstimateConfirmedService estimateConfirmedService;
 
   @Operation(
       summary = "[사장님 | 토큰 O | 물품 기본 단가 일괄 저장]",
@@ -128,5 +131,27 @@ public class OwnerEstimateController {
     log.info("PagedResponse content size = {}", response.getContent().size());
 
     return ResponseEntity.ok(BaseResponse.success("확정 견적서 조회 완료", response));
+  }
+
+
+  @Operation(
+      summary = "[사장님 | 토큰 O | 확정된 견적서 목록 조회]",
+      description = "CONFIRMED 상태인 견적서 목록을 사장님 storeId 기준으로 조회합니다."
+  )
+  @GetMapping("/list/confirmed")
+  public ResponseEntity<BaseResponse<PagedResponse<EstimateConfirmedResponse>>> getMyConfirmedEstimates(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam int page,
+      @RequestParam int size
+  ) {
+    Page<EstimateConfirmedResponse> result = estimateConfirmedService.getConfirmedEstimates(
+        userDetails.getStoreId(),
+        page,
+        size
+    );
+
+    PagedResponse<EstimateConfirmedResponse> response = PagedResponse.of(result);
+
+    return ResponseEntity.ok(BaseResponse.success("확정된 견적서 조회 완료", response));
   }
 }
