@@ -1,12 +1,16 @@
 package com.zzimple.estimate.guest.service;
 
+import com.zzimple.estimate.owner.exception.EstimateErrorCode;
+import com.zzimple.global.exception.CustomException;
+import org.springframework.security.access.AccessDeniedException;
+import com.google.api.gax.rpc.NotFoundException;
 import com.zzimple.estimate.guest.dto.response.EstimateListDetailResponse;
 import com.zzimple.estimate.guest.dto.response.EstimateListResponse;
+import com.zzimple.estimate.guest.dto.response.GuestEstimateRespondResult;
 import com.zzimple.estimate.guest.dto.response.PagedResponse;
 import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.guest.entity.MoveItems;
 import com.zzimple.estimate.guest.enums.EstimateStatus;
-import com.zzimple.estimate.guest.enums.MoveItemCategory;
 import com.zzimple.estimate.guest.repository.MoveItemsRepository;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest.ExtraChargeRequest;
@@ -57,28 +61,87 @@ public class GuestEstimateService {
   private final StorePriceSettingRepository storePriceSettingRepository;
 
   // 사장님에게 견적서 요청 온거 미리보기
+//  public PagedResponse<EstimateListResponse> getAcceptedEstimatesForUser(Long userId, int page, int size) {
+//    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")); // createdAt 기준 정렬
+//    Page<Estimate> estimates = estimateRepository.findByUserIdAndStatus(userId, EstimateStatus.ACCEPTED, pageable);
+//
+//    log.info("[견적 조회] 유저 ID: {}, 페이지: {}, 조회된 수: {}", userId, page, estimates.getTotalElements());
+//
+//    Page<EstimateListResponse> mappedPage = estimates.map(estimate -> {
+//      String moveDate = formatMoveDate(estimate.getMoveDate());
+//      String moveTime = formatMoveTime(estimate.getMoveTime());
+//
+//      List<MoveItems> items = moveItemsRepository.findByEstimateNo(estimate.getEstimateNo());
+//      long furnitureCount = items.stream().filter(i -> i.getCategory() == MoveItemCategory.FURNITURE).count();
+//      long applianceCount = items.stream().filter(i -> i.getCategory() == MoveItemCategory.APPLIANCE).count();
+//
+//      return EstimateListResponse.builder()
+//          .estimateNo(estimate.getEstimateNo())
+//          .moveDate(moveDate)
+//          .moveTime(moveTime)
+//          .fromAddress(estimate.getFromAddress())
+//          .toAddress(estimate.getToAddress())
+//          .furnitureCount((int) furnitureCount)
+//          .applianceCount((int) applianceCount)
+//          .build();
+//    });
+//
+//    return PagedResponse.<EstimateListResponse>builder()
+//        .content(mappedPage.getContent())
+//        .page(mappedPage.getNumber())
+//        .size(mappedPage.getSize())
+//        .totalElements(mappedPage.getTotalElements())
+//        .totalPages(mappedPage.getTotalPages())
+//        .last(mappedPage.isLast())
+//        .build();
+//  }
+
   public PagedResponse<EstimateListResponse> getAcceptedEstimatesForUser(Long userId, int page, int size) {
-    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")); // createdAt 기준 정렬
+    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
     Page<Estimate> estimates = estimateRepository.findByUserIdAndStatus(userId, EstimateStatus.ACCEPTED, pageable);
 
-    log.info("[견적 조회] 유저 ID: {}, 페이지: {}, 조회된 수: {}", userId, page, estimates.getTotalElements());
+    log.info("[견적 조회] 유저 ID: {}, 페이지: {}, 총 요소 수: {}", userId, page, estimates.getTotalElements());
 
     Page<EstimateListResponse> mappedPage = estimates.map(estimate -> {
-      String moveDate = formatMoveDate(estimate.getMoveDate());
-      String moveTime = formatMoveTime(estimate.getMoveTime());
+      // 1) storeName 조회
+      String storeName = "알 수 없음";
+      if (estimate.getStoreId() != null) {
+        storeName = storeRepository.findById(estimate.getStoreId())
+            .map(store -> {
+              String name = store.getName();
+              return (name != null ? name : "알 수 없음");
+            })
+            .orElseGet(() -> {
+              log.warn("[Store 조회 실패] storeId={}에 해당하는 Store 없음", estimate.getStoreId());
+              return "알 수 없음";
+            });
+      }
 
-      List<MoveItems> items = moveItemsRepository.findByEstimateNo(estimate.getEstimateNo());
-      long furnitureCount = items.stream().filter(i -> i.getCategory() == MoveItemCategory.FURNITURE).count();
-      long applianceCount = items.stream().filter(i -> i.getCategory() == MoveItemCategory.APPLIANCE).count();
+      // 2) truckCount: null-safe
+      Integer truckCount = estimate.getTruckCount();
+      if (truckCount == null) truckCount = 0;
+
+      // 3) totalPrice: Long → Integer 변환
+      Integer totalPrice = estimateCalculationRepository.findByEstimateNo(estimate.getEstimateNo())
+          .map(EstimateCalculation::getFinalTotalPrice)
+          .map(price -> {
+            try {
+              return Math.toIntExact(price); // ✅ 안전하게 변환
+            } catch (ArithmeticException e) {
+              log.warn("[총가격 변환 오류] 값이 Integer 범위를 초과했습니다. estimateNo={}, price={}", estimate.getEstimateNo(), price);
+              return Integer.MAX_VALUE; // 혹은 다른 fallback 처리
+            }
+          })
+          .orElseGet(() -> {
+            Integer fallback = estimate.getTotalPrice();
+            return fallback != null ? fallback : 0;
+          });
 
       return EstimateListResponse.builder()
           .estimateNo(estimate.getEstimateNo())
-          .moveDate(moveDate)
-          .moveTime(moveTime)
-          .fromAddress(estimate.getFromAddress())
-          .toAddress(estimate.getToAddress())
-          .furnitureCount((int) furnitureCount)
-          .applianceCount((int) applianceCount)
+          .storeName(storeName)
+          .truckCount(truckCount)
+          .totalPrice(totalPrice)
           .build();
     });
 
@@ -201,4 +264,40 @@ public class GuestEstimateService {
 
         .build();
   }
+
+  // 견적서 수락/거절
+  public GuestEstimateRespondResult respondToEstimate(Long estimateNo, EstimateStatus status, Long userId) {
+
+    log.info("[견적 응답 요청] estimateNo={}, status={}, userId={}", estimateNo, status, userId);
+
+    // 1. 견적서 조회
+    Estimate estimate = estimateRepository.findByEstimateNo(estimateNo)
+        .orElseThrow(() -> new CustomException(EstimateErrorCode.ESTIMATE_NOT_FOUND));
+
+    // 2. 사용자 검증
+    if (!estimate.getUserId().equals(userId)) {
+      log.warn("[접근 거부] 유저 ID 불일치. 요청 userId={}, 견적 userId={}", userId, estimate.getUserId());
+      throw new AccessDeniedException("본인의 견적서만 응답할 수 있습니다.");
+    }
+
+    // 3. 상태 처리
+    if (status == EstimateStatus.CONFIRMED) {
+      estimate.setStatus(EstimateStatus.CONFIRMED);
+      estimateRepository.save(estimate);
+      log.info("[견적 수락] estimateNo={} 상태를 CONFIRMED로 변경 완료", estimateNo);
+    } else {
+      estimateRepository.delete(estimate);
+      log.info("[견적 거절] estimateNo={} 삭제 완료", estimateNo);
+    }
+
+    // 4. 응답 DTO 반환
+    GuestEstimateRespondResult response = GuestEstimateRespondResult.builder()
+        .estimateNo(estimateNo)
+        .status(status)
+        .build();
+
+    log.info("[응답 완료] {}", response);
+    return response;
+  }
 }
+
