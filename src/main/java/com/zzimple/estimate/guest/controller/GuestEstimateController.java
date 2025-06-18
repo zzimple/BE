@@ -49,14 +49,15 @@ public class GuestEstimateController {
   )
   public ResponseEntity<BaseResponse<GuestEstimateRespondResult>> respondEstimate(
       @PathVariable Long estimateNo,
-      @RequestParam EstimateStatus status
+      @RequestParam EstimateStatus status,
+      @AuthenticationPrincipal CustomUserDetails user
   ) {
 
-    GuestEstimateRespondResult result = GuestEstimateRespondResult.builder()
-        .estimateNo(estimateNo)
-        .status(status)
-        .build();
+    GuestEstimateRespondResult result = guestEstimateService.respondToEstimate(
+        estimateNo, status, user.getUserId()
+    );
 
-    return ResponseEntity.ok(BaseResponse.success("견적서 응답 처리 완료",result));
+    return ResponseEntity.ok(BaseResponse.success("견적서 응답 처리 완료", result));
   }
+
 }
