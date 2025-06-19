@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -38,33 +39,94 @@ public class JwtRequestFilter extends OncePerRequestFilter {
       @NonNull HttpServletRequest request,
       @NonNull HttpServletResponse response,
       @NonNull FilterChain filterChain)
-      throws ServletException, IOException {
-
+      throws IOException {
     try {
-      // Authorization 헤더에서 JWT 토큰을 가져옴
-      final String authorizationHeader = request.getHeader("Authorization");
+      log.debug("요청 URI: {}, Method: {}", request.getRequestURI(), request.getMethod());
 
-      // 인증 헤더가 없는 경우 다음 필터로
-      if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//       추가
+    String jwt = null;
+    if (request.getCookies() != null) {
+      for (var cookie : request.getCookies()) {
+        log.debug("쿠키 확인 - name: {}, value: {}", cookie.getName(), cookie.getValue());
+
+        if ("accessToken".equals(cookie.getName())) {
+          jwt = cookie.getValue();
+          log.debug("accessToken 쿠키에서 JWT 추출: {}", jwt);
+
+          break;
+        }
+      }
+    }
+////       Authorization 헤더에서 JWT 토큰을 가져옴
+//      final String authorizationHeader = request.getHeader("Authorization");
+
+//       인증 헤더가 없는 경우 다음 필터로
+//      if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//        jwt = authorizationHeader.substring(7);
+//
+//        filterChain.doFilter(request, response);
+//        return;
+//      }
+////       추가
+//      else {
+//        // ✅ Authorization 헤더가 없으면 쿠키에서 accessToken 추출
+//        if (request.getCookies() != null) {
+//          for (var cookie : request.getCookies()) {
+//            if ("accessToken".equals(cookie.getName())) {
+//              jwt = cookie.getValue();
+//              break;
+//            }
+//          }
+//        }
+//      }
+
+      // ✅ 2. 토큰이 없는 경우 필터 체인 계속
+      if (jwt == null) {
+        log.debug("JWT 토큰이 존재하지 않습니다. 필터 체인 계속.");
+
         filterChain.doFilter(request, response);
         return;
       }
 
-      String jwt = authorizationHeader.substring(7);
-      String loginId = jwtUtil.extractLoginId(jwt);
+//      String jwt = authorizationHeader.substring(7);
+//      String loginId = jwtUtil.extractLoginId(jwt);
 
-      // 토큰은 유효하지만 SecurityContext에 인증 정보가 없는 경우
+//      // 토큰은 유효하지만 SecurityContext에 인증 정보가 없는 경우
+//      if (loginId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+//        User user =
+//            userRepository
+//                .findByLoginId(loginId)
+//                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+//
+//        if (jwtUtil.validateToken(jwt)) {
+//          Long storeId = jwtUtil.extractStoreId(jwt);
+//
+//          try {
+//            storeId = jwtUtil.extractStoreId(jwt);
+//          } catch (Exception ex) {
+//            log.debug("storeId는 토큰에 존재하지 않거나 null입니다. 일반 사용자로 간주.");
+//          }
+
+      // ✅ 3. 토큰으로부터 사용자 정보 추출 및 인증 처리
+      String loginId = jwtUtil.extractLoginId(jwt);
+      log.debug("JWT에서 추출한 loginId: {}", loginId);
+
       if (loginId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-        User user =
-            userRepository
-                .findByLoginId(loginId)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+        log.debug("SecurityContext에 인증 정보가 없습니다. 사용자 인증 시도 중...");
+
+        User user = userRepository
+            .findByLoginId(loginId)
+            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+
+        log.debug("사용자 정보 조회 완료: id={}, loginId={}", user.getId(), user.getLoginId());
+
 
         if (jwtUtil.validateToken(jwt)) {
-          Long storeId = jwtUtil.extractStoreId(jwt);
-
+          Long storeId = null;
           try {
             storeId = jwtUtil.extractStoreId(jwt);
+            log.debug("JWT에서 추출한 storeId: {}", storeId);
+
           } catch (Exception ex) {
             log.debug("storeId는 토큰에 존재하지 않거나 null입니다. 일반 사용자로 간주.");
           }
@@ -80,6 +142,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
           log.debug("Security Context에 '{}' 인증 정보를 저장했습니다", loginId);
         }
+      }  else {
+        log.warn("JWT 토큰 유효성 검증 실패 - loginId: {}", loginId);
       }
 
       filterChain.doFilter(request, response);
@@ -151,6 +215,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
     return path.startsWith("/api/auth/")
-        || path.equals("/juso/callback");
+        || path.equals("/juso/callback")
+        || path.equals("/users/refresh-token");
   }
 }

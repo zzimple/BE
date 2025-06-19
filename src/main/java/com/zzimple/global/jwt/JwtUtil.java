@@ -7,6 +7,8 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
@@ -24,11 +26,15 @@ public class JwtUtil {
 
   // access token 만료시간 - 1시간
   private static final long ACCESS_TOKEN_EXPIRE_TIME = TimeUnit.HOURS.toMillis(1);
+//  private static final long ACCESS_TOKEN_EXPIRE_TIME = TimeUnit.MINUTES.toMillis(2);
+
 
   // refresh token
   private static final long REFRESH_TOKEN_EXPIRE_TIME = TimeUnit.DAYS.toMillis(30);
 
   private Key getSigningKey() {
+    // log.info("🔑 현재 SECRET_KEY = '{}'", SECRET_KEY);
+
     return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -79,7 +85,7 @@ public class JwtUtil {
   }
 
   public long getRefreshTokenExpirySeconds() {
-    return TimeUnit.MILLISECONDS.toSeconds(REFRESH_TOKEN_EXPIRE_TIME);
+    return TimeUnit.DAYS.toSeconds(REFRESH_TOKEN_EXPIRE_TIME);
   }
 
   // 토큰 검증 부분
@@ -149,4 +155,23 @@ public class JwtUtil {
   public boolean isTokenExpired(String token) {
     return extractExpiration(token).before(new Date());
   }
+
+  public String extractTokenFromRequest(HttpServletRequest request) {
+    String header = request.getHeader("Authorization");
+    if (header != null && header.startsWith("Bearer ")) {
+      return header.substring(7);
+    }
+
+    // ✅ accessToken 쿠키에서도 시도
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if (cookie.getName().equals("accessToken")) {
+          return cookie.getValue();
+        }
+      }
+    }
+
+    return null;
+  }
+
 }

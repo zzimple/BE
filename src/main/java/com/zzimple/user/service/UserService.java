@@ -125,26 +125,13 @@ public class UserService {
       Long storeId = null;
       Long ownerId = null;
 
-//      // 사장님일 경우에만 storeId, ownerId 추출
-//      if (user.getRole() == UserRole.OWNER) {
-//        Owner owner = ownerRepository.findByUserId(user.getId())
-//            .orElseThrow(() -> new CustomException(OwnerErrorCode.OWNER_NOT_FOUND));
-//
-//        ownerId = owner.getId();
-//
-//        Store store = storeRepository.findByOwnerId(owner.getId())
-//            .orElseThrow(() -> new CustomException(OwnerErrorCode.STORE_NOT_FOUND));
-//
-//        storeId = store.getId();
-//      }
-
-      // 사장님일 경우에만 storeId, ownerId 추출 (1번 조회로 변경) 🔥 수정
+      // 사장님일 경우에만 storeId, ownerId 추출 (1번 조회로 변경) 🔥
       if (user.getRole() == UserRole.OWNER) {
-        Store store = storeRepository.findByOwnerUserId(user.getId())  // 🔥 userId로 한 번에 조회
+        Store store = storeRepository.findByOwnerUserId(user.getId())
             .orElseThrow(() -> new CustomException(OwnerErrorCode.STORE_NOT_FOUND));
 
-        storeId = store.getId();             // 🔥 가게 ID 세팅
-        ownerId = store.getOwnerId();        // 🔥 사장님 PK(ID) 세팅
+        storeId = store.getId();
+        ownerId = store.getOwnerId();
       }
 
       // 3. 토큰 생성
@@ -157,6 +144,14 @@ public class UserService {
       user.setRefreshToken(refreshToken);
       userRepository.save(user);
 
+      ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
+          .httpOnly(true)
+          .secure(false) // 배포 시 true
+          .sameSite("Lax")
+          .path("/")
+          .maxAge(Duration.ofHours(1)) // or jwtUtil.getAccessTokenExpirySeconds()
+          .build();
+
       // 7. HttpOnly 쿠키로 리프레시 토큰 내려주기
       long expirySeconds = jwtUtil.getRefreshTokenExpirySeconds();
       // (JwtUtil에 리프레시 토큰 만료 기간을 초 단위로 반환하는 메서드가 있다고 가정)
@@ -167,6 +162,8 @@ public class UserService {
           .path("/")
           .maxAge(Duration.ofSeconds(expirySeconds))
           .build();
+
+      response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
       response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
       // 5. 로그인 성공 응답 생성
