@@ -75,7 +75,7 @@ public class SecurityConfig {
                 // 개발 할 때만 풀어두기
 //                .requestMatchers("/estimates/draft/**").permitAll()
 
-                .requestMatchers("/juso/**", "/api/vision/**", "/kakao-navi/**").permitAll()
+                .requestMatchers("/juso/**", "/api/vision/**", "/kakao-navi/**", "gpt/***").permitAll()
 
 
                 // 직원 전용 API
