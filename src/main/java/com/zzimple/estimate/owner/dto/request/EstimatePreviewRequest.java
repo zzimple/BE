@@ -43,7 +43,7 @@ public class EstimatePreviewRequest {
   @Schema(description = "도착지 구·군", example = "성남시")
   private String toRegion2;
 
-  @Schema(description = "견적서 상태", example = "PENDING")
-  private EstimateStatus status;
+//  @Schema(description = "견적서 상태", example = "PENDING")
+//  private EstimateStatus status;
 
 }

@@ -19,7 +19,9 @@ import com.zzimple.estimate.owner.service.SaveItemBasePriceService;
 import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -57,7 +59,11 @@ public class EstimateOwnerController {
       @RequestParam int size,
       @ModelAttribute EstimatePreviewRequest request
   ) {
-    Page<EstimatePreviewResponse> result = estimatePreviewService.getAvailableEstimates(
+    System.out.println("request");
+    log.info("📥 공개 견적서 요청: userId={}, page={}, size={}, request={}",
+        userDetails.getUserId(), page, size, request);
+
+    Page<EstimatePreviewResponse> result = estimatePreviewService.getMergedEstimates(
         userDetails.getUserId(),
         page,
         size,
@@ -71,6 +77,20 @@ public class EstimateOwnerController {
         request.getToRegion1(),
         request.getToRegion2()
     );
+    // ✅ [여기!] 중복 estimateNo 확인 로직 삽입
+    List<Long> estimateNos = result.getContent().stream()
+        .map(EstimatePreviewResponse::getEstimateNo)
+        .toList();
+
+    Set<Long> seen = new HashSet<>();
+    List<Long> duplicates = estimateNos.stream()
+        .filter(id -> !seen.add(id))
+        .toList();
+
+    log.info("📦 estimateNo 목록: {}", estimateNos);
+    if (!duplicates.isEmpty()) {
+      log.warn("❗ estimateNo 중복 감지됨: {}", duplicates);
+    }
 
     PagedResponse<EstimatePreviewResponse> response = PagedResponse.of(result);
 
