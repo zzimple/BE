@@ -215,7 +215,7 @@ public class GuestEstimateService {
               .itemTypeId(item.getItemTypeId())
               .itemTypeName(item.getItemTypeName())
               .quantity(item.getQuantity())
-              .basePrice(item.getBasePrice())
+              .basePrice(item.getBasePrice() != null ? item.getBasePrice() : 0)
               .extraCharges(extraChargeRequests)
               .build();
         })
