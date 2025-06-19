@@ -10,5 +10,5 @@ import lombok.Getter;
 public class AssignStaffDateResponse {
   private Long staffId;
   private String staffName;
-  private LocalDate workDate;
+  private String workDate;
 }

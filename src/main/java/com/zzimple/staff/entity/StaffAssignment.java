@@ -25,7 +25,7 @@ public class StaffAssignment extends BaseTimeEntity {
   private Long id;
 
   private Long estimateNo;
-  private LocalDate workDate;
+  private String workDate;
 
   private Long staffId;
   private String staffName;

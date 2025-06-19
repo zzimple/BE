@@ -1,6 +1,7 @@
 package com.zzimple.staff.entity;
 
 import com.zzimple.global.common.BaseTimeEntity;
+import com.zzimple.owner.enums.StaffScheduleStatus;
 import com.zzimple.staff.enums.Status;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,4 +45,7 @@ public class Staff extends BaseTimeEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)
   private Status status;
+
+  @Enumerated(EnumType.STRING)
+  private StaffScheduleStatus scheduleStatus;
 }
