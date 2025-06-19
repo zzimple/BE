@@ -2,6 +2,7 @@ package com.zzimple.estimate.owner.repository;
 
 import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.guest.enums.EstimateStatus;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -195,4 +196,6 @@ public interface EstimateRepository extends JpaRepository<Estimate, Long> {
       @Param("toRegion2")    String toRegion2,
       Pageable pageable
   );
+
+  int countByStoreIdAndStatus(Long storeId, EstimateStatus status);
 }

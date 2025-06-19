@@ -14,9 +14,16 @@ import com.zzimple.owner.store.exception.StoreErrorCode;
 import com.zzimple.owner.store.repository.StoreRepository;
 import com.zzimple.user.exception.UserErrorCode;
 import com.zzimple.user.repository.UserRepository;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -159,4 +166,102 @@ public class EstimatePreviewService {
         EstimateStatus.ACCEPTED
         );
   }
+
+  // ✅ [추가] WAITING + 내 ACCEPTED 견적 통합 조회
+  public Page<EstimatePreviewResponse> getMergedEstimates(
+      Long userId, int page, int size, Integer moveYear, Integer moveMonth, Integer moveDay,
+      String moveType, String moveOption,
+      String fromRegion1, String fromRegion2, String toRegion1, String toRegion2
+  ) {
+    // 유효 사용자 확인
+    userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    // moveDate 파싱
+    String yearStr  = (moveYear  != null ? String.valueOf(moveYear) : null);
+    String monthStr = (moveMonth != null ? String.format("%02d", moveMonth) : null);
+    String dayStr   = (moveDay   != null ? String.format("%02d", moveDay) : null);
+
+    String moveTypeValue = null;
+    if (StringUtils.hasText(moveType)) {
+      try {
+        moveTypeValue = MoveType.valueOf(moveType.toUpperCase()).name();
+      } catch (IllegalArgumentException ex) {
+        throw new CustomException(EstimateErrorCode.INVALID_MOVE_TYPE);
+      }
+    }
+
+    String moveOptionValue = null;
+    if (StringUtils.hasText(moveOption)) {
+      try {
+        moveOptionValue = MoveOptionType.valueOf(moveOption.toUpperCase()).name();
+      } catch (IllegalArgumentException ex) {
+        throw new CustomException(EstimateErrorCode.INVALID_MOVE_OPTION);
+      }
+    }
+
+    Pageable pageable = PageRequest.of(page, size);
+
+    // WAITING 견적 조회
+    Page<Estimate> waiting = estimateRepository.findPublicEstimatesWithFilters(
+        yearStr, monthStr, dayStr,
+        moveTypeValue, moveOptionValue,
+        fromRegion1, fromRegion2,
+        toRegion1, toRegion2,
+        pageable
+    );
+
+    // 내 storeId로 ACCEPTED 견적 조회
+    Store store = storeRepository.findByOwnerUserId(userId)
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+
+    Page<Estimate> accepted = estimateRepository.findAcceptedEstimatesWithFilters(
+        store.getId(),
+        yearStr, monthStr, dayStr,
+        moveTypeValue, moveOptionValue,
+        fromRegion1, fromRegion2,
+        toRegion1, toRegion2,
+        pageable
+    );
+
+    // 병합 후 변환
+//    List<EstimatePreviewResponse> combined = Stream.concat(
+//            waiting.getContent().stream(),
+//            accepted.getContent().stream()
+//        ).map(EstimatePreviewResponse::fromEntity)
+//        .collect(Collectors.toList());
+
+    // 3) DTO 변환 리스트 생성 (.toList() 사용)
+    List<EstimatePreviewResponse> waitingList = waiting.getContent().stream()
+        .map(EstimatePreviewResponse::fromEntity)
+        .toList();
+
+    List<EstimatePreviewResponse> acceptedList = accepted.getContent().stream()
+        .map(EstimatePreviewResponse::fromEntity)
+        .toList();
+;
+
+    List<EstimatePreviewResponse> combined = Stream.concat(waitingList.stream(), acceptedList.stream())
+        .collect(Collectors.collectingAndThen(
+            Collectors.toMap(
+                EstimatePreviewResponse::getEstimateNo,
+                Function.identity(),
+                (existing, replacement) -> existing,
+                LinkedHashMap::new
+            ),
+            map -> new ArrayList<>(map.values())
+        ));
+    log.info("🔄 병합 후 중복 제거된 estimateNo 목록: {}", combined.stream()
+        .map(EstimatePreviewResponse::getEstimateNo)
+        .collect(Collectors.toList()));
+
+
+    // PageImpl로 래핑
+    return new PageImpl<>(
+        combined,
+        pageable,
+        waiting.getTotalElements() + accepted.getTotalElements()
+    );
+  }
+
 }
