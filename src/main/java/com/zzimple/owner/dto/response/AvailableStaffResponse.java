@@ -1,14 +1,13 @@
 package com.zzimple.owner.dto.response;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
 @Builder
-public class AssignStaffDateResponse {
+public class AvailableStaffResponse {
   private Long staffId;
   private String staffName;
-  private String workDate;
+  private String staffPhoneNum;
+  private String status;
 }

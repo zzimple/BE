@@ -6,6 +6,7 @@ import com.zzimple.estimate.owner.dto.request.SaveItemBasePriceRequest;
 import com.zzimple.estimate.owner.dto.request.SaveStorePriceSettingRequest;
 import com.zzimple.estimate.owner.dto.response.EstimateConfirmedResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
+import com.zzimple.estimate.owner.dto.response.EstimateSummaryResponse;
 import com.zzimple.estimate.owner.dto.response.SaveItemBasePriceResponse;
 import com.zzimple.estimate.owner.dto.response.StorePriceSettingResponse;
 import com.zzimple.estimate.owner.service.EstimateConfirmedService;
@@ -154,4 +155,12 @@ public class EstimateOwnerPageController {
 
     return ResponseEntity.ok(BaseResponse.success("확정된 견적서 조회 완료", response));
   }
+
+  @GetMapping("/summary")
+  public ResponseEntity<BaseResponse<EstimateSummaryResponse>> getSummary(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    Long userId = userDetails.getUserId();
+
+    return ResponseEntity.ok(BaseResponse.success(estimateConfirmedService.getEstimateSummary(userId)));
+  }
+
 }

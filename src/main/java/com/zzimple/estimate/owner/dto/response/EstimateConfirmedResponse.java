@@ -27,7 +27,9 @@ public class EstimateConfirmedResponse {
   private String moveType;
   private String optionType;
 
-  public static EstimateConfirmedResponse from(Estimate estimate) {
+  private String guestName;
+
+  public static EstimateConfirmedResponse from(Estimate estimate, String guestName) {
 
     return EstimateConfirmedResponse.builder()
         .estimateNo(estimate.getEstimateNo())
@@ -36,6 +38,7 @@ public class EstimateConfirmedResponse {
         .moveDate(estimate.getMoveDate())
         .moveType(estimate.getMoveType() != null ? estimate.getMoveType().name() : null)
         .optionType(estimate.getOptionType() != null ? estimate.getOptionType().name() : null)
+        .guestName(guestName)
         .build();
   }
 }
