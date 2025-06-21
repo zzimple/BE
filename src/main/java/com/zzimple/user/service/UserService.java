@@ -145,7 +145,7 @@ public class UserService {
       userRepository.save(user);
 
       ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
-          .httpOnly(true)
+          .httpOnly(false)
           .secure(false) // 배포 시 true
           .sameSite("Lax")
           .path("/")

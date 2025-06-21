@@ -30,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -214,12 +215,27 @@ public class EstimateDraftController {
               저장이 완료되면 estimateNo(PK)가 반환됩니다.
           """
   )
-  @PostMapping("/finalize")
+  @PostMapping("/finalize/{draftId}")
   public ResponseEntity<BaseResponse<Long>> finalizeEstimate(
-      @RequestParam UUID draftId,
+      @PathVariable UUID draftId,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     Long estimateNo = estimateDraftFullService.finalizeEstimateDraft(draftId, userDetails);
     return ResponseEntity.ok(BaseResponse.success("견적서가 저장되었습니다.", estimateNo));
   }
+
+  @Operation(
+      summary = "[ 고객 | 토큰 O | 견적서 - 임시 저장된 초안 전체 조회 (단계별 복원용)]",
+      description = "draftId 기준으로 Redis에 임시 저장된 모든 견적서 데이터를 통합 조회합니다."
+  )
+  @GetMapping("/load/{draftId}")
+  public ResponseEntity<BaseResponse<EstimateDraftFullResponse>> getDraftData(
+      @PathVariable UUID draftId
+  ) {
+    EstimateDraftFullResponse response = estimateDraftFullService.getFullDraft(draftId);
+    return ResponseEntity.ok(BaseResponse.success("임시 저장된 견적 초안 데이터를 조회했습니다.", response));
+  }
+
+
+
 }

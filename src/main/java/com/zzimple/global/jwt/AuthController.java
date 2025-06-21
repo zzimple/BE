@@ -174,12 +174,11 @@ public class AuthController {
   @Operation(summary = "로그아웃 (refreshToken 쿠키 + DB 삭제)")
   public ResponseEntity<Void> logout(
       HttpServletRequest request,
-      HttpServletResponse response,
-      @RequestHeader("Authorization") String accessTokenHeader
+      HttpServletResponse response
   ) {
 
     // ✅ 1. accessToken은 Filter에서 추출하거나 Cookie에서 읽도록
-    String accessToken = jwtUtil.extractTokenFromRequest(request); // 커스텀 메서드 필요
+    String accessToken = jwtUtil.extractTokenFromRequest(request);
 
     if (accessToken != null) {
       String loginId = jwtUtil.extractLoginId(accessToken);
@@ -204,19 +203,6 @@ public class AuthController {
     accessCookie.setPath("/");
     accessCookie.setMaxAge(0);
     response.addCookie(accessCookie);
-
-//    // 2. accessToken에서 loginId 추출
-//    if (accessTokenHeader != null && accessTokenHeader.startsWith("Bearer ")) {
-//      String accessToken = accessTokenHeader.substring(7);
-//      String loginId = jwtUtil.extractLoginId(accessToken);
-//
-//      if (loginId != null) {
-//        userRepository.findByLoginId(loginId).ifPresent(user -> {
-//          user.setRefreshToken(null); // DB에서 refreshToken 제거
-//          userRepository.save(user);
-//        });
-//      }
-//    }
 
     return ResponseEntity.ok().build();
   }
