@@ -1,6 +1,8 @@
 package com.zzimple.estimate.owner.service;
 
+import com.zzimple.estimate.owner.entity.EstimateResponse;
 import com.zzimple.estimate.guest.enums.EstimateStatus;
+import com.zzimple.estimate.owner.repository.EstimateResponseRepository;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
 import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.guest.enums.MoveOptionType;
@@ -8,7 +10,6 @@ import com.zzimple.estimate.guest.enums.MoveType;
 import com.zzimple.estimate.owner.exception.EstimateErrorCode;
 import com.zzimple.estimate.owner.repository.EstimateRepository;
 import com.zzimple.global.exception.CustomException;
-import com.zzimple.owner.repository.OwnerRepository;
 import com.zzimple.owner.store.entity.Store;
 import com.zzimple.owner.store.exception.StoreErrorCode;
 import com.zzimple.owner.store.repository.StoreRepository;
@@ -37,7 +38,7 @@ public class EstimatePreviewService {
   private final EstimateRepository estimateRepository;
   private final StoreRepository storeRepository;
   private final UserRepository userRepository;
-  private final OwnerRepository ownerRepository;
+  private final EstimateResponseRepository estimateResponseRepository;
 
   // 공개 견적서 페이징
   public Page<EstimatePreviewResponse> getEstimatePreview(
@@ -231,15 +232,65 @@ public class EstimatePreviewService {
 //        ).map(EstimatePreviewResponse::fromEntity)
 //        .collect(Collectors.toList());
 
-    // 3) DTO 변환 리스트 생성 (.toList() 사용)
+//    // 3) DTO 변환 리스트 생성 (.toList() 사용)
+//    List<EstimatePreviewResponse> waitingList = waiting.getContent().stream()
+//        .map(EstimatePreviewResponse::fromEntity)
+//        .toList();
+//
+//    List<EstimatePreviewResponse> acceptedList = accepted.getContent().stream()
+//        .map(EstimatePreviewResponse::fromEntity)
+//        .toList();
+//;
+//
+//    List<EstimatePreviewResponse> combined = Stream.concat(waitingList.stream(), acceptedList.stream())
+//        .collect(Collectors.collectingAndThen(
+//            Collectors.toMap(
+//                EstimatePreviewResponse::getEstimateNo,
+//                Function.identity(),
+//                (existing, replacement) -> existing,
+//                LinkedHashMap::new
+//            ),
+//            map -> new ArrayList<>(map.values())
+//        ));
+//    log.info("🔄 병합 후 중복 제거된 estimateNo 목록: {}", combined.stream()
+//        .map(EstimatePreviewResponse::getEstimateNo)
+//        .collect(Collectors.toList()));
+//
+//
+//    // PageImpl로 래핑
+//    return new PageImpl<>(
+//        combined,
+//        pageable,
+//        waiting.getTotalElements() + accepted.getTotalElements()
+//    );
+//  }
+
+    // ✅ 이미 응답한 estimate는 제외하는 필터 추가
+    Long storeId = storeRepository.findByOwnerUserId(userId)
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND))
+        .getId();
+
+    List<Long> respondedEstimateNos = estimateResponseRepository.findAllByStoreId(store.getId())
+        .stream()
+        .map(EstimateResponse::getEstimateNo)
+        .toList();
+
     List<EstimatePreviewResponse> waitingList = waiting.getContent().stream()
-        .map(EstimatePreviewResponse::fromEntity)
+        .map(estimate -> {
+          EstimatePreviewResponse dto = EstimatePreviewResponse.fromEntity(estimate);
+          dto.setRespondedByMe(respondedEstimateNos.contains(estimate.getEstimateNo()));
+          return dto;
+        })
+        .filter(dto -> !dto.isRespondedByMe()) // ✅ 내가 이미 응답한 견적서는 리스트에서 제거
         .toList();
 
     List<EstimatePreviewResponse> acceptedList = accepted.getContent().stream()
-        .map(EstimatePreviewResponse::fromEntity)
+        .map(estimate -> {
+          EstimatePreviewResponse dto = EstimatePreviewResponse.fromEntity(estimate);
+          dto.setRespondedByMe(true); // ✅ 내가 응답한 확정 견적
+          return dto;
+        })
         .toList();
-;
 
     List<EstimatePreviewResponse> combined = Stream.concat(waitingList.stream(), acceptedList.stream())
         .collect(Collectors.collectingAndThen(
@@ -251,12 +302,11 @@ public class EstimatePreviewService {
             ),
             map -> new ArrayList<>(map.values())
         ));
+
     log.info("🔄 병합 후 중복 제거된 estimateNo 목록: {}", combined.stream()
         .map(EstimatePreviewResponse::getEstimateNo)
         .collect(Collectors.toList()));
 
-
-    // PageImpl로 래핑
     return new PageImpl<>(
         combined,
         pageable,

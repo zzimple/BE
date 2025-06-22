@@ -10,5 +10,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class GuestEstimateRespondResult {
   private Long estimateNo;
+  private Long storeId;
   private EstimateStatus status;
 }

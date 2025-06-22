@@ -14,5 +14,6 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
     WHERE o.userId = :userId
   """)
   Optional<Store> findByOwnerUserId(@Param("userId") Long userId);
+  boolean existsByIdAndOwnerId(Long id, Long ownerId);
 }
 

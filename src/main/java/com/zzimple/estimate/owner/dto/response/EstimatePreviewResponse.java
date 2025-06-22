@@ -2,6 +2,7 @@ package com.zzimple.estimate.owner.dto.response;
 
 import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.guest.enums.EstimateStatus;
+import com.zzimple.estimate.owner.entity.EstimateResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +36,10 @@ public class EstimatePreviewResponse {
   private String optionType;
 
   private EstimateStatus status;
+//  private EstimateResponse estimateResponse;
+
+  private boolean respondedByMe;
+
 
   public static EstimatePreviewResponse fromEntity(Estimate estimate) {
 
@@ -66,6 +71,7 @@ public class EstimatePreviewResponse {
         .moveType(estimate.getMoveType()   != null ? estimate.getMoveType().name()   : null)
         .optionType(estimate.getOptionType() != null ? estimate.getOptionType().name() : null)
         .status(estimate.getStatus())
+        .respondedByMe(false)
         .build();
   }
 }

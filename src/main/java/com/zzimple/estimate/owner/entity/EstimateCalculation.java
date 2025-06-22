@@ -22,8 +22,8 @@ import lombok.Setter;
 @Table(
     name = "estimate_calculation",
     uniqueConstraints = @UniqueConstraint(
-        name = "uk_estimate_calculation_estimate_no",
-        columnNames = "estimate_no"
+        name = "uk_est_calc_est_no_store_id",
+        columnNames = {"estimate_no", "store_id"}
     )
 )
 public class EstimateCalculation extends BaseTimeEntity {
