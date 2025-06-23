@@ -319,6 +319,7 @@ public class GuestEstimateService {
               .storeName(store != null ? store.getName() : "알 수 없음")
               .truckCount(r.getTruckCount())
               .ownerMessage(r.getOwnerMessage())
+              .status(r.getStatus())
               .respondedAt(r.getRespondedAt())
               .itemsTotal(calc != null ? calc.getItemsTotalPrice() : 0)
               .extraTotal(calc != null ? calc.getExtraChargesTotal() : 0)
@@ -331,7 +332,7 @@ public class GuestEstimateService {
   }
 
   // 손님 최종 응답
-  public GuestEstimateRespondResult respondToEstimate(Long estimateNo, Long storeId, EstimateStatus status, Long userId) {
+  public GuestEstimateRespondResult respondToEstimate(Long estimateNo, Long selectedStoreId, Long userId) {
 
     Estimate estimate = estimateRepository.findByEstimateNo(estimateNo)
         .orElseThrow(() -> new CustomException(EstimateErrorCode.ESTIMATE_NOT_FOUND));
@@ -340,31 +341,39 @@ public class GuestEstimateService {
       throw new AccessDeniedException("본인의 견적서만 응답할 수 있습니다.");
     }
 
-    Store store = storeRepository.findById(storeId)
-        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+//    Store store = storeRepository.findById(selectedStoreId)
+//        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
 
     // ✅ 모든 EstimateResponse 중에서
-    List<EstimateResponse> allResponses = estimateResponseRepository.findByEstimateNo(estimateNo);
+    List<EstimateOwnerResponse> responses = estimateOwnerResponseRepository.findByEstimateNo(estimateNo);
 
-    for (EstimateResponse res : allResponses) {
-      if (res.getStoreId().equals(storeId)) {
-        res.setStatus(EstimateStatus.ACCEPTED);
-      } else {
-        res.setStatus(EstimateStatus.REJECTED);
-      }
-      res.setRespondedAt(LocalDateTime.now());
+    if (responses.isEmpty()) {
+      throw new CustomException(EstimateErrorCode.NO_RESPONSES_FOUND);
     }
 
-    estimateResponseRepository.saveAll(allResponses);
+    boolean confirmedOne = false;
 
-    // ✅ Estimate도 상태 변경
-    estimate.setStatus(EstimateStatus.CONFIRMED);
-    estimate.setStoreId(storeId);
-    estimate.setStoreName(store.getName());
+    for (EstimateOwnerResponse r : responses) {
+      if (r.getStoreId().equals(selectedStoreId)) {
+        r.setStatus(EstimateStatus.CONFIRMED); // ✅ 선택된 사장님
+        confirmedOne = true;
+      } else {
+        r.setStatus(EstimateStatus.REJECTED);  // ❌ 나머지 사장님
+      }
+    }
+
+    if (!confirmedOne) {
+      throw new CustomException(EstimateErrorCode.STORE_RESPONSE_NOT_FOUND);
+    }
+
+    estimate.setStoreId(selectedStoreId);
+    estimate.setStatus(EstimateStatus.CONFIRMED); // 전체 견적 상태도 확정
     estimateRepository.save(estimate);
+    estimateOwnerResponseRepository.saveAll(responses);
 
     return GuestEstimateRespondResult.builder()
         .estimateNo(estimateNo)
+        .confirmedStoreId(selectedStoreId)
         .status(EstimateStatus.CONFIRMED)
         .build();
   }

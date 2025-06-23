@@ -35,4 +35,7 @@ public class EstimateOwnerResponse {
   private String ownerMessage;
 
   private LocalDateTime respondedAt;
+
+  @Enumerated(EnumType.STRING)
+  private EstimateStatus status;  // WAITING, CONFIRMED, REJECTED 등
 }

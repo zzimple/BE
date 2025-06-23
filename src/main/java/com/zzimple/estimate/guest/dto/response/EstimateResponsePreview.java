@@ -1,5 +1,6 @@
 package com.zzimple.estimate.guest.dto.response;
 
+import com.zzimple.estimate.guest.enums.EstimateStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,4 +22,5 @@ public class EstimateResponsePreview {
   private int itemsTotal;
   private int extraTotal;
   private int finalTotal;
+  private EstimateStatus status;
 }

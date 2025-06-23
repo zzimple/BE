@@ -12,6 +12,6 @@ import lombok.Setter;
 public class EstimateRespondRequest {
   @NotNull
   private Long storeId;
-  @NotNull
-  private EstimateStatus status; // ACCEPTED or REJECTED
+//  @NotNull
+//  private EstimateStatus status; // ACCEPTED or REJECTED
 }
