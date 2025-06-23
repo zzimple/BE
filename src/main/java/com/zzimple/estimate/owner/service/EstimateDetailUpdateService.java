@@ -128,10 +128,11 @@ public class EstimateDetailUpdateService {
   @Transactional
   public CalculateOwnerInputResponse calculateAndSaveFinalTotals(Long storeId, Long estimateNo) {
     EstimateCalculation estimateCalculation = estimateCalculationRepository
-        .findFirstByEstimateNo(estimateNo)
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
         .orElseThrow(() ->
             new EntityNotFoundException(
-                "EstimateCalculation not found for estimateNo=" + estimateNo)
+                "요약 정보가 없습니다. estimateNo=" + estimateNo + ", storeId=" + storeId
+            )
         );
 
     // 2) DB에서 items_total_price 꺼내기

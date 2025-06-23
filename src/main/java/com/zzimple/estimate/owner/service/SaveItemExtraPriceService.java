@@ -111,8 +111,7 @@ public class SaveItemExtraPriceService {
             .storeId(storeId)
             .build());
 
-    calc.setItemsTotalPrice(itemsTotal);
-    calc.setExtraChargesTotal(extrasTotal);
+    calc.setItemsTotalPrice(itemsTotal+extrasTotal);
     estimateCalculationRepository.save(calc);
 
     log.info("견적 저장 완료: estimateNo={}", estimateNo);
