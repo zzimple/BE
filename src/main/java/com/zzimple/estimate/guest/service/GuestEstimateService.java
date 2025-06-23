@@ -154,7 +154,7 @@ public class GuestEstimateService {
         .orElseThrow(() -> new EntityNotFoundException("견적서를 찾을 수 없습니다. id=" + estimateNo));
 
     // 2) 이 매장에 대한 사장님 응답이 있는지
-    EstimateOwnerResponse ownerResp = estimateOwnerResponseRepository
+    EstimateOwnerResponse estimateOwnerResponse = estimateOwnerResponseRepository
         .findByEstimateNoAndStoreId(estimateNo, storeId)
         .orElseThrow(() -> new EntityNotFoundException(
             "응답 없음 estimateNo=" + estimateNo + ", storeId=" + storeId));
@@ -267,6 +267,7 @@ public class GuestEstimateService {
         .holidayCharge(estimate.getIsHoliday() ? setting.getHolidayCharge() : null)
         .goodDayCharge(estimate.getIsGoodDay() ? setting.getGoodDayCharge() : null)
         .weekendCharge(estimate.getIsWeekend() ? setting.getWeekendCharge() : null)
+        .status(estimateOwnerResponse.getStatus())
 
         .build();
   }

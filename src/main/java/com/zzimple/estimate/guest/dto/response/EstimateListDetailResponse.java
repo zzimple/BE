@@ -3,6 +3,7 @@ package com.zzimple.estimate.guest.dto.response;
 
 import com.zzimple.estimate.guest.entity.Address;
 import com.zzimple.estimate.guest.entity.AddressDetailInfo;
+import com.zzimple.estimate.guest.enums.EstimateStatus;
 import com.zzimple.estimate.guest.enums.MoveOptionType;
 import com.zzimple.estimate.guest.enums.MoveType;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest;
@@ -71,5 +72,7 @@ public class EstimateListDetailResponse {
 
   @Schema(description = "주말 추가금 (isWeekend=true일 때만 세팅)")
   private Integer weekendCharge;
+
+  private EstimateStatus status;
 
 }
