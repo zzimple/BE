@@ -29,30 +29,73 @@ public class AddressService {
 
   private static final Duration TTL = Duration.ofHours(1);
 
+//  public AddressDraftResponse saveAddressDraft(UUID draftId, AddressDraftSaveRequest request) {
+//    log.info("[AddressDraft] 임시 주소 저장 시작 - userId: {}", draftId);
+//
+//    AddressWithDetailRequest from = request.getFromAddress();
+//    AddressWithDetailRequest to = request.getToAddress();
+//
+//    // 출발지와 도착지를 하나로 묶기 위한 객체
+//    DraftAddressWrapper wrapper = new DraftAddressWrapper(from, to);
+//
+//    try {
+//      String json = objectMapper.writeValueAsString(wrapper);
+//      String key = RedisKeyUtil.draftAddressKey(draftId);
+//
+//      redisTemplate.opsForValue().set(key, json, TTL);
+//
+//      log.info("[AddressDraft] 저장 완료 - key: {}, TTL: {}분", key, TTL.toMinutes());
+//
+//      log.debug("[AddressDraft] 저장된 데이터: {}", json);
+//
+//      return AddressDraftResponse.builder()
+//          .roadAddr(from.getAddress().getRoadAddrPart1())
+//          .build();
+//    } catch (JsonProcessingException e) {
+//      log.warn("[AddressDraft] JSON 직렬화 실패 - userId: {}, 이유: {}", draftId, e.getMessage());
+//      throw new CustomException(AddressErrorCode.ADDRESS_DRAFT_SAVE_FAIL);
+//    }
+//  }
+
   public AddressDraftResponse saveAddressDraft(UUID draftId, AddressDraftSaveRequest request) {
-    log.info("[AddressDraft] 임시 주소 저장 시작 - userId: {}", draftId);
+    log.info("[AddressDraft] 임시 주소 저장 시작 - draftId: {}", draftId);
+    String key = RedisKeyUtil.draftAddressKey(draftId);
 
-    AddressWithDetailRequest from = request.getFromAddress();
-    AddressWithDetailRequest to = request.getToAddress();
+    // 수정: 1) Redis에서 기존에 저장된 JSON을 읽어옵니다.
+    DraftAddressWrapper existing;
+    String existingJson = redisTemplate.opsForValue().get(key);
+    if (existingJson != null) {
+      try {
+        existing = objectMapper.readValue(existingJson, DraftAddressWrapper.class);
+      } catch (JsonProcessingException e) {
+        log.warn("[AddressDraft] 기존 JSON 파싱 실패 - key: {}, 이유: {}", key, e.getMessage());
+        existing = new DraftAddressWrapper(null, null);
+      }
+    } else {
+      existing = new DraftAddressWrapper(null, null);
+    }
 
-    // 출발지와 도착지를 하나로 묶기 위한 객체
-    DraftAddressWrapper wrapper = new DraftAddressWrapper(from, to);
+    // 수정: 2) request에 들어온 값만 덮어쓰기 (null인 필드는 기존 값 유지)
+    AddressWithDetailRequest mergedFrom =
+        request.getFromAddress() != null ? request.getFromAddress() : existing.fromAddress();
+    AddressWithDetailRequest mergedTo =
+        request.getToAddress() != null ? request.getToAddress() : existing.toAddress();
+
+    DraftAddressWrapper merged = new DraftAddressWrapper(mergedFrom, mergedTo);
 
     try {
-      String json = objectMapper.writeValueAsString(wrapper);
-      String key = RedisKeyUtil.draftAddressKey(draftId);
-
+      String json = objectMapper.writeValueAsString(merged);
+      // 수정: 3) 병합된 데이터를 Redis에 다시 저장 (TTL 유지)
       redisTemplate.opsForValue().set(key, json, TTL);
 
       log.info("[AddressDraft] 저장 완료 - key: {}, TTL: {}분", key, TTL.toMinutes());
-
       log.debug("[AddressDraft] 저장된 데이터: {}", json);
 
       return AddressDraftResponse.builder()
-          .roadAddr(from.getAddress().getRoadAddrPart1())
+          .roadAddr(merged.fromAddress().getAddress().getRoadAddrPart1())
           .build();
     } catch (JsonProcessingException e) {
-      log.warn("[AddressDraft] JSON 직렬화 실패 - userId: {}, 이유: {}", draftId, e.getMessage());
+      log.warn("[AddressDraft] JSON 직렬화 실패 - draftId: {}, 이유: {}", draftId, e.getMessage());
       throw new CustomException(AddressErrorCode.ADDRESS_DRAFT_SAVE_FAIL);
     }
   }
@@ -61,9 +104,11 @@ public class AddressService {
   private record DraftAddressWrapper(
       AddressWithDetailRequest fromAddress,
       AddressWithDetailRequest toAddress
-  ) {}
+  ) {
 
-// 전체 불러오기 (조회용)
+  }
+
+  // 전체 불러오기 (조회용)
   public AddressFullResponse getAddressDraft(UUID draftId) {
     String redisKey = RedisKeyUtil.draftAddressKey(draftId);
     String json = redisTemplate.opsForValue().get(redisKey);
@@ -85,5 +130,4 @@ public class AddressService {
       throw new CustomException(AddressErrorCode.JSON_PARSE_ERROR);
     }
   }
-
 }
