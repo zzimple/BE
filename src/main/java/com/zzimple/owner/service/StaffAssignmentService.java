@@ -1,6 +1,9 @@
 package com.zzimple.owner.service;
 
 import com.zzimple.estimate.guest.entity.Estimate;
+import com.zzimple.estimate.guest.enums.EstimateStatus;
+import com.zzimple.estimate.owner.entity.EstimateOwnerResponse;
+import com.zzimple.estimate.owner.repository.EstimateOwnerResponseRepository;
 import com.zzimple.estimate.owner.repository.EstimateRepository;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.owner.dto.response.AssignStaffDateResponse;
@@ -43,6 +46,7 @@ public class StaffAssignmentService {
   private static final DateTimeFormatter ESTIMATE_DATE_FORMAT =
       DateTimeFormatter.ofPattern("yyyyMMdd");
   private final OwnerRepository ownerRepository;
+  private final EstimateOwnerResponseRepository estimateOwnerResponseRepository;
 
   @Transactional
   public AssignStaffDateResponse assignWithDate(Long estimateNo, Long staffId) {
@@ -55,6 +59,17 @@ public class StaffAssignmentService {
     // 2) Estimate 조회
     Estimate estimate = estimateRepository.findById(estimateNo)
         .orElseThrow(() -> new EntityNotFoundException("견적 없음 id=" + estimateNo));
+
+
+// 🔐 ✅ 사장님이 해당 견적서의 confirmedStoreId와 일치하는지 검증 필요
+    if (!EstimateStatus.CONFIRMED.equals(estimate.getStatus())) {
+      throw new IllegalStateException("아직 고객이 견적을 확정하지 않았습니다.");
+    }
+
+
+//    if (!Objects.equals(estimate.getStoreId(), staff.getOwnerId())) {
+//      throw new AccessDeniedException("이 견적서는 해당 사장님의 것이 아닙니다.");
+//    }
 
     // 3) User 조회
     User user = userRepository.findById(staff.getUserId())

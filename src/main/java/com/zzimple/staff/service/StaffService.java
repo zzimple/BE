@@ -67,7 +67,7 @@ public class StaffService {
           return new CustomException(StaffErrorCode.OWNER_NOT_FOUND);
         });
 
-    Store store = storeRepository.findByOwnerUserId(owner.getId())
+    Store store = storeRepository.findByOwnerId(owner.getId())
         .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
 
     Long storeId = store.getId();
@@ -95,7 +95,12 @@ public class StaffService {
 
   // 사장님 승인 메소드
   @Transactional
-  public Status approveStaff(Long staffId, Status status, Long storeId) {
+  public Status approveStaff(Long staffId, Status status, Long userId) {
+
+    Store store = storeRepository.findByOwnerUserId(userId)
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+
+    Long storeId = store.getId();
 
     Staff staff = staffRepository.findById(staffId)
         .orElseThrow(() -> {
@@ -104,7 +109,7 @@ public class StaffService {
         });
 
     if (!staff.getStoreId().equals(storeId)) {
-      log.warn("[승인 실패] 소속 사장님 불일치 - 요청자 (가게 번호): {}, 직원이 요청한 사장님: {}", storeId, staff.getStoreId());
+      log.warn("[승인 실패] 소속 사장님 불일치 - 요청자 (가게 번호): {}, 직원이 요청한 가게 아이디: {}", storeId, staff.getStoreId());
       throw new CustomException(StaffErrorCode.STAFF_OWNER_MISMATCH);
     }
 
@@ -153,7 +158,7 @@ public class StaffService {
         .orElseThrow(() -> new CustomException(GlobalErrorCode.RESOURCE_NOT_FOUND));
 
     // 5. 가게 정보 가져오기
-    Store store = storeRepository.findByOwnerUserId(owner.getId())
+    Store store = storeRepository.findByOwnerId(owner.getId())
         .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
 
     // 6. 응답 생성

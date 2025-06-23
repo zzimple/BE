@@ -67,12 +67,12 @@ public class StaffController {
   @PreAuthorize("hasRole('OWNER')")
   public ResponseEntity<BaseResponse<OwnerApproveResponse>> approveStaff(@RequestBody OwnerApproveRequest request, @AuthenticationPrincipal CustomUserDetails user) {
 
-    Long ownerId = user.getUserId();
+    Long userId = user.getUserId();
 
-    log.info("[사장님 승인] 사장님 승인 요청 - staffId: {}, ownerId: {}", request.getStaffId(), ownerId);
+    log.info("[사장님 승인] 사장님 승인 요청 - staffId: {}, userId: {}", request.getStaffId(), userId);
 
     // 서비스에서 상태 반환받기
-    Status resultStatus = staffService.approveStaff(request.getStaffId(), request.getStatus(), ownerId);
+    Status resultStatus = staffService.approveStaff(request.getStaffId(), request.getStatus(), userId);
 
     // 메시지 결정
     String message = switch (resultStatus) {

@@ -65,18 +65,17 @@ public class GuestEstimateController {
     return ResponseEntity.ok(BaseResponse.success(responseList));
   }
 
-  @PutMapping("/{estimateNo}/respond")
+  @PutMapping("/{estimateNo}/respond/{storeId}")
   public ResponseEntity<BaseResponse<GuestEstimateRespondResult>> respondToEstimate(
       @PathVariable Long estimateNo,
-      @RequestBody @Valid EstimateRespondRequest request,
+      @PathVariable Long storeId,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     Long userId = userDetails.getUserId(); // 고객 ID
 
     GuestEstimateRespondResult result = guestEstimateService.respondToEstimate(
         estimateNo,
-        request.getStoreId(),     // ✅ 고객이 선택한 가게
-        request.getStatus(),      // ✅ CONFIRMED or REJECTED
+        storeId,     // ✅ 고객이 선택한 가게
         userId                    // 고객 본인
     );
 
