@@ -25,6 +25,7 @@ public class EstimatePreviewDetailResponse {
 
   private Long estimateNo;
   private Long userId;
+  private Long storeId;
 
   private String moveDate;
   private LocalDateTime moveTime;

@@ -14,4 +14,6 @@ public class OwnerProfileResponse {
   private String roadAddrPart1;
   private String addrDetail;
   private String zipNo;
+
+  private Long storeId;
 }

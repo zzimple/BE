@@ -7,14 +7,20 @@ import com.zzimple.estimate.owner.dto.response.ItemTotalResponse;
 import com.zzimple.estimate.owner.dto.response.ItemTotalResultResponse;
 import com.zzimple.estimate.owner.entity.EstimateCalculation;
 import com.zzimple.estimate.owner.entity.MoveItemExtraCharge;
+import com.zzimple.estimate.owner.entity.MoveItemPriceByStore;
 import com.zzimple.estimate.owner.repository.EstimateCalculationRepository;
 import com.zzimple.estimate.owner.repository.MoveItemExtraChargeRepository;
+import com.zzimple.estimate.owner.repository.MoveItemPriceByStoreRepository;
+import com.zzimple.global.exception.CustomException;
+import com.zzimple.owner.store.entity.Store;
+import com.zzimple.owner.store.exception.StoreErrorCode;
+import com.zzimple.owner.store.repository.StoreRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,22 +32,37 @@ public class SaveItemExtraPriceService {
   private final MoveItemsRepository moveItemsRepository;
   private final MoveItemExtraChargeRepository moveItemExtraChargeRepository;
   private final EstimateCalculationRepository estimateCalculationRepository;
+  private final MoveItemPriceByStoreRepository moveItemPriceByStoreRepository;
+  private final StoreRepository storeRepository;
 
   @Transactional
-  public void saveEstimateItems(Long estimateNo, Long storeId, List<SaveEstimatePriceRequest> itemRequests) {
+  public void saveEstimateItems(Long estimateNo, Long userId, List<SaveEstimatePriceRequest> itemRequests) {
+
+    Store store = storeRepository.findByOwnerUserId(userId)
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+
+    Long storeId = store.getId();
 
     // moveitem의 기본금을 update하기.
     for (SaveEstimatePriceRequest req : itemRequests) {
-      log.debug("기본금 업데이트: estimateNo={}, storeId={}, itemTypeId={}, newBasePrice={}",
-        estimateNo, storeId, req.getItemTypeId(), req.getBasePrice());
+      Long itemTypeId = req.getItemTypeId();
+      Integer basePrice = req.getBasePrice();
 
-      int updated = moveItemsRepository.updateBasePriceIfChanged(
-          estimateNo,
-          storeId,
-          req.getItemTypeId(),
-          req.getBasePrice()
-      );
-      log.debug("업데이트된 행 수: itemTypeId={}, updated={}", req.getItemTypeId(), updated);
+      log.debug("💰 기본금 처리 시작: estimateNo={}, storeId={}, itemTypeId={}, basePrice={}",
+          estimateNo, storeId, itemTypeId, basePrice);
+
+      // 기본금 저장 (업데이트 or 신규 등록)
+      MoveItemPriceByStore base = moveItemPriceByStoreRepository
+          .findByEstimateNoAndStoreIdAndItemTypeId(estimateNo, storeId, itemTypeId)
+          .orElseGet(() -> MoveItemPriceByStore.builder()
+              .estimateNo(estimateNo)
+              .storeId(storeId)
+              .itemTypeId(itemTypeId)
+              .build());
+
+      base.setBasePrice(basePrice);
+      moveItemPriceByStoreRepository.save(base);
+      log.debug("✅ 기본금 저장 완료: itemTypeId={}, basePrice={}", itemTypeId, basePrice);
     }
 
     // 2) item-level 추가금 저장: 추가 항목마다 직접 itemId 조회 후 처리
@@ -68,73 +89,97 @@ public class SaveItemExtraPriceService {
         log.debug("새 옵션 저장 완료: itemId={}, count={}", itemId, toSave.size());
       }
     }
+
+    int itemsTotal = moveItemPriceByStoreRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .stream()
+        .mapToInt(MoveItemPriceByStore::getBasePrice)
+        .sum();
+
+    // 4) 추가금 합계 계산
+    int extrasTotal = moveItemExtraChargeRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .stream()
+        .mapToInt(MoveItemExtraCharge::getAmount)
+        .sum();
+
+    // 5) EstimateCalculation 조회/생성 및 업데이트
+    EstimateCalculation calc = estimateCalculationRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .orElseGet(() -> EstimateCalculation.builder()
+            .estimateNo(estimateNo)
+            .storeId(storeId)
+            .build());
+
+    calc.setItemsTotalPrice(itemsTotal+extrasTotal);
+    estimateCalculationRepository.save(calc);
+
     log.info("견적 저장 완료: estimateNo={}", estimateNo);
   }
 
   @Transactional
-  public ItemTotalResultResponse calculateAndSaveItemTotalPrices(Long estimateNo, Long storeId) {
+  public ItemTotalResultResponse calculateAndSaveItemTotalPrices(Long estimateNo, Long userId) {
+
+    Store store = storeRepository.findByOwnerUserId(userId)
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+
+    Long storeId = store.getId();
+    log.info("조회 중인 ownerUserId={}, 조회된 storeId={}", userId, store.getId());
 
     List<MoveItems> items = moveItemsRepository.findByEstimateNo(estimateNo);
-
     List<ItemTotalResponse> responses = new ArrayList<>();
+
     int totalPrice = 0;
 
     for (MoveItems item : items) {
-      int baseTotal = calculateBaseTotal(item);
-      int extraTotal = calculateExtraTotal(
-          item.getEstimateNo(),
-          item.getStoreId(),
-          item.getItemTypeId()
-      );
-      int itemTotalPrice = baseTotal + extraTotal;
+      Long itemTypeId = item.getItemTypeId();
 
-      item.setPer_item_totalPrice(itemTotalPrice);
-      responses.add(toItemTotalResponse(item, baseTotal, extraTotal, itemTotalPrice));
+      // 1. 기본금 조회 (가게 기준)
+// 수정: estimateNo 조건을 추가한 단건 조회로 교체    ← 수정
+      int basePrice = moveItemPriceByStoreRepository
+          .findByEstimateNoAndStoreIdAndItemTypeId(estimateNo, storeId, itemTypeId)  // ← 수정
+          .map(MoveItemPriceByStore::getBasePrice)                                   // ← 수정
+          .orElse(0);
+
+
+      // 2. 추가금 계산 (가게 기준)
+      int extraPrice = moveItemExtraChargeRepository
+          .findByEstimateNoAndStoreIdAndItemTypeId(estimateNo, storeId, itemTypeId)
+          .stream()
+          .mapToInt(MoveItemExtraCharge::getAmount)
+          .sum();
+
+      // 3. 총합 계산 및 저장
+      int itemTotalPrice = basePrice + extraPrice;
+
+      item.setPer_item_totalPrice(itemTotalPrice); // 저장 가능할 경우
 
       totalPrice += itemTotalPrice;
-      log.info("견적 항목 ID {} → base: {}, extra: {}, total: {}", item.getId(), baseTotal, extraTotal, itemTotalPrice);
+
+      responses.add(new ItemTotalResponse(
+          item.getId(),
+          itemTypeId,
+          item.getItemTypeName(),
+          basePrice,
+          extraPrice,
+          itemTotalPrice
+      ));
+
+      log.info("🧮 계산 완료: itemId={}, base={}, extra={}, total={}", item.getId(), basePrice, extraPrice, itemTotalPrice);
     }
 
     moveItemsRepository.saveAll(items);
 
-    EstimateCalculation estimateCalculation = estimateCalculationRepository.findByEstimateNo(estimateNo)
-        .orElseGet(() -> EstimateCalculation.builder()
-            .estimateNo(estimateNo)
-            .storeId(storeId)
-            .extraChargesTotal(0)
-            .finalTotalPrice(0)
-            .build()
-        );
+    // ← 수정: orElseThrow로만 불러오고, 새로 생성 안 함
+    EstimateCalculation calculation = estimateCalculationRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            "계산 레코드가 없습니다. estimateNo=" + estimateNo + ", storeId=" + storeId));
 
-    estimateCalculation.setItemsTotalPrice(totalPrice);
-    estimateCalculationRepository.save(estimateCalculation);
+    calculation.setItemsTotalPrice(totalPrice);
 
-    // 전체 금액과 아이템 리스트를 함께 반환
-    return new ItemTotalResultResponse(totalPrice, responses);
-  }
+    estimateCalculationRepository.save(calculation);
 
-  private int calculateBaseTotal(MoveItems item) {
-    Integer base = item.getBasePrice();
-    return base != null ? base : 0;
-  }
-
-
-  private int calculateExtraTotal(Long estimateNo, Long storeId, Long itemTypeId) {
-    return moveItemExtraChargeRepository
-        .findByEstimateNoAndStoreIdAndItemTypeId(estimateNo, storeId, itemTypeId)
-        .stream()
-        .mapToInt(MoveItemExtraCharge::getAmount)
-        .sum();
-  }
-
-  private ItemTotalResponse toItemTotalResponse(MoveItems item, int baseTotal, int extraTotal, int totalPrice) {
-    return new ItemTotalResponse(
-        item.getId(),
-        item.getItemTypeId(),
-        item.getItemTypeName(),
-        baseTotal,
-        extraTotal,
-        totalPrice
-    );
+    return new ItemTotalResultResponse(totalPrice, storeId, responses);
   }
 }

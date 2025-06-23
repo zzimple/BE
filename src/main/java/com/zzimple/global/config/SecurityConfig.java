@@ -79,7 +79,7 @@ public class SecurityConfig {
 
 
                 // 직원 전용 API
-                .requestMatchers("/staff/request", "/staff/time-off/request", "staff/time-off/me", "/staff/profile").hasRole("STAFF")
+                .requestMatchers("/staff/request", "/staff/time-off/request", "/staff/time-off/me", "/staff/profile").hasRole("STAFF")
 
                 // 사장 전용 API
                 .requestMatchers("/staff/approve","/staff/list", "/estimates/owner/**", "/staff/time-off/pending", "/staff/time-off/decide/**", "/owner/schedule/**" ,"/staff/time-off/list/**").hasRole("OWNER")

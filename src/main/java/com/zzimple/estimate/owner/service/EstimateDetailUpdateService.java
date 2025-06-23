@@ -1,8 +1,11 @@
 package com.zzimple.estimate.owner.service;
 
 import com.zzimple.estimate.guest.entity.Estimate;
-import com.zzimple.estimate.guest.entity.MoveItems;
+import com.zzimple.estimate.owner.entity.EstimateOwnerResponse;
+import com.zzimple.estimate.owner.entity.EstimateResponse;
 import com.zzimple.estimate.guest.enums.EstimateStatus;
+import com.zzimple.estimate.owner.repository.EstimateOwnerResponseRepository;
+import com.zzimple.estimate.owner.repository.EstimateResponseRepository;
 import com.zzimple.estimate.guest.repository.MoveItemsRepository;
 import com.zzimple.estimate.owner.dto.request.SubmitFinalEstimateRequest;
 import com.zzimple.estimate.owner.dto.request.SaveEstimatePriceRequest.ExtraChargeRequest;
@@ -19,6 +22,7 @@ import com.zzimple.global.exception.CustomException;
 import com.zzimple.owner.store.entity.Store;
 import com.zzimple.owner.store.repository.StoreRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +40,8 @@ public class EstimateDetailUpdateService {
   private final MoveItemsRepository moveItemsRepository;
   private final StoreRepository storeRepository;
   private final EstimateCalculationRepository estimateCalculationRepository;
+  private final EstimateResponseRepository estimateResponseRepository;
+  private final EstimateOwnerResponseRepository estimateOwnerResponseRepository;
 
   @Transactional
   public void saveOwnerInput(Long storeId, Long estimateNo, SubmitFinalEstimateRequest request) {
@@ -47,10 +53,13 @@ public class EstimateDetailUpdateService {
         .orElseThrow(() -> new EntityNotFoundException("Store not found with id=" + storeId));
 
     Integer truckCount = request.getTruckCount();
-
     if (truckCount != null) {
       estimate.setTruckCount(truckCount);
+      estimateRepository.save(estimate);
     }
+
+    // 2) 기존에 저장된 모든 추가금을 초기화    ← 수정
+    estimateExtraChargeRepository.deleteByEstimateNoAndStoreId(estimateNo, storeId);
 
     List<ExtraChargeRequest> extraCharges = request.getExtraCharges();
     if (extraCharges != null) {
@@ -85,12 +94,32 @@ public class EstimateDetailUpdateService {
           setting.getWeekendCharge());
     }
 
-    estimate.setOwnerMessage(request.getOwnerMessage());
-    estimate.setStoreId(storeId);
-    estimate.setStoreName(store.getName());
-    estimate.setStatus(EstimateStatus.ACCEPTED);
-    estimate.setTruckCount(request.getTruckCount());
-    estimateRepository.save(estimate);
+//    estimate.setOwnerMessage(request.getOwnerMessage());
+//    estimate.setStoreId(storeId);
+//    estimate.setStoreName(store.getName());
+//    estimate.setStatus(EstimateStatus.ACCEPTED);
+//    estimate.setTruckCount(request.getTruckCount());
+//    estimateRepository.save(estimate);
+
+    // 6) 사장님 응답 저장/업데이트 (한 번만 save)    ← 수정
+    EstimateOwnerResponse response = estimateOwnerResponseRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .map(existing -> {
+          existing.setTruckCount(truckCount);
+          existing.setOwnerMessage(request.getOwnerMessage());
+          existing.setRespondedAt(LocalDateTime.now());
+          return existing;
+        })
+        .orElseGet(() -> EstimateOwnerResponse.builder()
+            .estimateNo(estimateNo)
+            .storeId(storeId)
+            .truckCount(truckCount)
+            .ownerMessage(request.getOwnerMessage())
+            .respondedAt(LocalDateTime.now())
+            .build()
+        );
+
+    estimateOwnerResponseRepository.save(response);   // ← 수정: 중복 제거
 
     log.info("[EstimateDetailUpdateService] 사장님 입력 저장 완료 - estimateNo: {} message: {}",
         estimateNo, request.getOwnerMessage());
@@ -99,23 +128,31 @@ public class EstimateDetailUpdateService {
   @Transactional
   public CalculateOwnerInputResponse calculateAndSaveFinalTotals(Long storeId, Long estimateNo) {
     EstimateCalculation estimateCalculation = estimateCalculationRepository
-        .findFirstByEstimateNo(estimateNo)
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
         .orElseThrow(() ->
-            new EntityNotFoundException("EstimateCalculation not found for estimateNo=" + estimateNo)
+            new EntityNotFoundException(
+                "요약 정보가 없습니다. estimateNo=" + estimateNo + ", storeId=" + storeId
+            )
         );
 
     // 2) DB에서 items_total_price 꺼내기
     int itemsTotal = estimateCalculation.getItemsTotalPrice();
 
     // 3) DB에서 추가금 합산
-    int extraTotal = estimateExtraChargeRepository.findByEstimateNo(estimateNo).stream()
+    int extraTotal = estimateExtraChargeRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .stream()
         .mapToInt(EstimateExtraCharge::getAmount)
         .sum();
 
     Estimate estimate = estimateRepository.findById(estimateNo)
         .orElseThrow(() -> new IllegalArgumentException("해당 견적이 없습니다."));
 
-    int truckCount = estimate.getTruckCount();
+    EstimateOwnerResponse response = estimateOwnerResponseRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .orElseThrow(() -> new CustomException(EstimateErrorCode.ESTIMATE_OWNER_RESPONSE_NOT_FOUND));
+
+    int truckCount = response.getTruckCount();
 
     StorePriceSetting setting = storePriceSettingRepository.findByStoreId(storeId)
         .orElseThrow(() -> new IllegalArgumentException("사장님 가격 설정 정보가 없습니다."));

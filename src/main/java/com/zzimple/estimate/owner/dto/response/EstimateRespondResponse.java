@@ -1,15 +1,19 @@
-package com.zzimple.estimate.guest.dto.response;
+package com.zzimple.estimate.owner.dto.response;
 
 import com.zzimple.estimate.guest.enums.EstimateStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
-@Builder
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
-public class GuestEstimateRespondResult {
+@Builder
+public class EstimateRespondResponse {
   private Long estimateNo;
-  private Long storeId;
+  private Long ownerId;
   private EstimateStatus status;
 }

@@ -16,5 +16,6 @@ import lombok.Setter;
 @Schema(description = "견적 항목별 금액 목록과 총 금액을 포함하는 응답 DTO")
 public class ItemTotalResultResponse {
   private int totalPrice;
+  private Long storeId;
   private List<ItemTotalResponse> items;
 }

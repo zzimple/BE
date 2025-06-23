@@ -5,15 +5,22 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MoveItemExtraChargeRepository extends JpaRepository<MoveItemExtraCharge, Long> {
-  List<MoveItemExtraCharge> findByItemTypeId(Long itemTypeId);
-  void deleteByItemTypeId(Long itemTypeId);  List<MoveItemExtraCharge>
-  findByEstimateNoAndStoreIdAndItemTypeId(
-          Long estimateNo,
-          Long storeId,
-          Long itemTypeId
-      );
-  List<MoveItemExtraCharge> findByEstimateNo(Long estimateNo);
-  List<MoveItemExtraCharge> findByEstimateNoAndItemTypeIdIn(Long estimateNo, List<Long> itemTypeIds);
+  // 여러 itemTypeId에 대해 한 번에 조회
+  List<MoveItemExtraCharge> findByEstimateNoAndStoreIdAndItemTypeIdIn(
+      Long estimateNo,
+      Long storeId,
+      List<Long> itemTypeIds
+  );
+
+  // 단일 itemTypeId에 대해 조회
+  List<MoveItemExtraCharge> findByEstimateNoAndStoreIdAndItemTypeId(
+      Long estimateNo,
+      Long storeId,
+      Long itemTypeId
+  );
+
   void deleteByEstimateNoAndStoreIdAndItemTypeId(Long estimateNo, Long storeId, Long itemTypeId);
-  List<MoveItemExtraCharge> findByEstimateNoAndItemTypeId(Long estimateNo, Long itemTypeId);
-}
+  List<MoveItemExtraCharge> findByEstimateNoAndStoreId(
+      Long estimateNo,
+      Long storeId
+  );}

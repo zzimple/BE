@@ -119,6 +119,9 @@ public class OwnerService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new RuntimeException("User not found"));
 
-    return new OwnerProfileResponse(user.getUserName(), user.getLoginId(), user.getEmail(), owner.getRoadFullAddr(), owner.getRoadAddrPart1(), owner.getAddrDetail(), owner.getZipNo());
+    Store store = storeRepository.findByOwnerUserId(userId)
+        .orElseThrow(() -> new RuntimeException("Store not found"));
+
+    return new OwnerProfileResponse(user.getUserName(), user.getLoginId(), user.getEmail(), owner.getRoadFullAddr(), owner.getRoadAddrPart1(), owner.getAddrDetail(), owner.getZipNo(), store.getId());
   }
 }

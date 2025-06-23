@@ -144,9 +144,9 @@ public class EstimateOwnerController {
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestBody List<SaveEstimatePriceRequest> requests) {
 
-    Long storeId = userDetails.getStoreId();
+    Long userId = userDetails.getUserId();
 
-    saveItemExtraPriceService.saveEstimateItems(estimateNo, storeId, requests);
+    saveItemExtraPriceService.saveEstimateItems(estimateNo, userId, requests);
     return ResponseEntity.ok(BaseResponse.success("견적서 항목 저장 완료"));
   }
 
@@ -159,9 +159,9 @@ public class EstimateOwnerController {
       @AuthenticationPrincipal CustomUserDetails userDetails
       ) {
 
-    Long storeId = userDetails.getStoreId();
+    Long userId = userDetails.getUserId();
 
-    ItemTotalResultResponse result = saveItemExtraPriceService.calculateAndSaveItemTotalPrices(estimateNo, storeId);
+    ItemTotalResultResponse result = saveItemExtraPriceService.calculateAndSaveItemTotalPrices(estimateNo, userId);
     return ResponseEntity.ok(BaseResponse.success("총 금액 계산 완료", result));
   }
 

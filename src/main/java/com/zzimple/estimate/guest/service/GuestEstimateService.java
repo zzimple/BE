@@ -1,9 +1,19 @@
 package com.zzimple.estimate.guest.service;
 
+import com.zzimple.estimate.guest.dto.EstimateResponseList;
+import com.zzimple.estimate.guest.dto.MyEstimatePreview;
+import com.zzimple.estimate.guest.dto.response.EstimateResponsePreview;
+import com.zzimple.estimate.guest.dto.response.PagedMyEstimates;
+import com.zzimple.estimate.owner.entity.EstimateOwnerResponse;
+import com.zzimple.estimate.owner.entity.EstimateResponse;
+import com.zzimple.estimate.owner.entity.MoveItemPriceByStore;
+import com.zzimple.estimate.owner.repository.EstimateOwnerResponseRepository;
+import com.zzimple.estimate.owner.repository.EstimateResponseRepository;
 import com.zzimple.estimate.owner.exception.EstimateErrorCode;
+import com.zzimple.estimate.owner.repository.MoveItemPriceByStoreRepository;
 import com.zzimple.global.exception.CustomException;
+import com.zzimple.owner.store.exception.StoreErrorCode;
 import org.springframework.security.access.AccessDeniedException;
-import com.google.api.gax.rpc.NotFoundException;
 import com.zzimple.estimate.guest.dto.response.EstimateListDetailResponse;
 import com.zzimple.estimate.guest.dto.response.EstimateListResponse;
 import com.zzimple.estimate.guest.dto.response.GuestEstimateRespondResult;
@@ -59,42 +69,8 @@ public class GuestEstimateService {
   private final UserRepository userRepository;
   private final EstimateCalculationRepository estimateCalculationRepository;
   private final StorePriceSettingRepository storePriceSettingRepository;
-
-  // 사장님에게 견적서 요청 온거 미리보기
-//  public PagedResponse<EstimateListResponse> getAcceptedEstimatesForUser(Long userId, int page, int size) {
-//    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")); // createdAt 기준 정렬
-//    Page<Estimate> estimates = estimateRepository.findByUserIdAndStatus(userId, EstimateStatus.ACCEPTED, pageable);
-//
-//    log.info("[견적 조회] 유저 ID: {}, 페이지: {}, 조회된 수: {}", userId, page, estimates.getTotalElements());
-//
-//    Page<EstimateListResponse> mappedPage = estimates.map(estimate -> {
-//      String moveDate = formatMoveDate(estimate.getMoveDate());
-//      String moveTime = formatMoveTime(estimate.getMoveTime());
-//
-//      List<MoveItems> items = moveItemsRepository.findByEstimateNo(estimate.getEstimateNo());
-//      long furnitureCount = items.stream().filter(i -> i.getCategory() == MoveItemCategory.FURNITURE).count();
-//      long applianceCount = items.stream().filter(i -> i.getCategory() == MoveItemCategory.APPLIANCE).count();
-//
-//      return EstimateListResponse.builder()
-//          .estimateNo(estimate.getEstimateNo())
-//          .moveDate(moveDate)
-//          .moveTime(moveTime)
-//          .fromAddress(estimate.getFromAddress())
-//          .toAddress(estimate.getToAddress())
-//          .furnitureCount((int) furnitureCount)
-//          .applianceCount((int) applianceCount)
-//          .build();
-//    });
-//
-//    return PagedResponse.<EstimateListResponse>builder()
-//        .content(mappedPage.getContent())
-//        .page(mappedPage.getNumber())
-//        .size(mappedPage.getSize())
-//        .totalElements(mappedPage.getTotalElements())
-//        .totalPages(mappedPage.getTotalPages())
-//        .last(mappedPage.isLast())
-//        .build();
-//  }
+  private final EstimateResponseRepository estimateResponseRepository;
+  private final EstimateOwnerResponseRepository estimateOwnerResponseRepository;
 
   public PagedResponse<EstimateListResponse> getAcceptedEstimatesForUser(Long userId, int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -171,14 +147,24 @@ public class GuestEstimateService {
 
   // 최종 견적서 상세보기
   @Transactional(readOnly = true)
-  public EstimateListDetailResponse getEstimateDetail(Long estimateNo) {
+  public EstimateListDetailResponse getEstimateDetail(Long estimateNo, Long storeId) {
     log.info("[최종 견적 상세조회] estimateNo = {}", estimateNo);
 
-    Estimate estimate = estimateRepository.findById(estimateNo)
+    Estimate estimate = estimateRepository.findByEstimateNo(estimateNo)
         .orElseThrow(() -> new EntityNotFoundException("견적서를 찾을 수 없습니다. id=" + estimateNo));
 
-    Store store = storeRepository.findById(estimate.getStoreId())
-        .orElseThrow(() -> new EntityNotFoundException("Store not found"));
+    // 2) 이 매장에 대한 사장님 응답이 있는지
+    EstimateOwnerResponse ownerResp = estimateOwnerResponseRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            "응답 없음 estimateNo=" + estimateNo + ", storeId=" + storeId));
+
+    Store store = storeRepository.findById(storeId)
+        .orElseThrow(() -> new EntityNotFoundException("Store not found for id=" + storeId));
+
+    log.info("▶ getEstimateDetail 호출: estimateNo={} storeId={}",
+        estimateNo, storeId);
+
 
     // StorePriceSetting 조회
     StorePriceSetting setting = storePriceSettingRepository.findById(store.getId())
@@ -190,8 +176,10 @@ public class GuestEstimateService {
     User user = userRepository.findById(owner.getUserId())
         .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-    EstimateCalculation calculation = estimateCalculationRepository.findByEstimateNo(estimateNo)
-        .orElseThrow(() -> new EntityNotFoundException("Estimate calculation not found"));
+    EstimateCalculation calculation = estimateCalculationRepository
+        .findByEstimateNoAndStoreId(estimateNo, storeId)   // ← 수정
+        .orElseThrow(() -> new EntityNotFoundException(
+            "계산 정보가 없습니다. estimateNo=" + estimateNo + ", storeId=" + storeId));  // ← 수정
 
     // 짐 목록 조회
     List<MoveItems> moveItems = moveItemsRepository.findByEstimateNo(estimateNo);
@@ -201,7 +189,9 @@ public class GuestEstimateService {
     List<SaveEstimatePriceRequest> itemPriceDetails = moveItems.stream()
         .map(item -> {
           List<MoveItemExtraCharge> extraList =
-              moveItemExtraChargeRepository.findByEstimateNoAndItemTypeId(estimateNo, item.getItemTypeId());          log.info("[물품 추가금] itemId = {}, 추가금 개수 = {}", item.getItemTypeId(), extraList.size());
+              moveItemExtraChargeRepository.findByEstimateNoAndStoreIdAndItemTypeId(
+                  estimateNo, storeId, item.getItemTypeId());
+          log.info("[물품 추가금] itemId = {}, 추가금 개수 = {}", item.getItemTypeId(), extraList.size());
 
           List<ExtraChargeRequest> extraChargeRequests = extraList.stream()
               .map(extra -> {
@@ -211,32 +201,48 @@ public class GuestEstimateService {
                 return dto;
               }).toList();
 
-          return SaveEstimatePriceRequest.builder()
-              .itemTypeId(item.getItemTypeId())
-              .itemTypeName(item.getItemTypeName())
-              .quantity(item.getQuantity())
-              .basePrice(item.getBasePrice() != null ? item.getBasePrice() : 0)
-              .extraCharges(extraChargeRequests)
-              .build();
-        })
-        .toList();
+//          int basePrice = moveItemPriceByStoreRepository
+//              .findByStoreIdAndItemTypeId(estimate.getStoreId(), item.getItemTypeId())
+//              .map(MoveItemPriceByStore::getBasePrice)
+//              .orElse(0);
+//
+//          return SaveEstimatePriceRequest.builder()
+//              .itemTypeId(item.getItemTypeId())
+//              .itemTypeName(item.getItemTypeName())
+//              .quantity(item.getQuantity())
+//              .basePrice(basePrice)
+//              .extraCharges(extraChargeRequests)
+//              .build();
+//        })
+//        .toList();
+
+          SaveEstimatePriceRequest priceRequest = new SaveEstimatePriceRequest();
+          priceRequest.setItemTypeId(item.getItemTypeId());
+          priceRequest.setItemTypeName(item.getItemTypeName());
+          priceRequest.setQuantity(item.getQuantity());
+          priceRequest.setBasePrice(item.getPer_item_totalPrice()); // 또는 basePrice 별도로
+          priceRequest.setExtraCharges(extraChargeRequests);
+
+          return priceRequest;
+        }).toList();
 
     // 기타 추가금 (트럭, 공휴일 등)
     List<SaveEstimatePriceRequest.ExtraChargeRequest> extraCharges =
-        estimateExtraChargeRepository.findByEstimateNo(estimateNo).stream()
+        estimateExtraChargeRepository.findByEstimateNoAndStoreId(estimateNo, storeId).stream()
             .map(extra -> {
               SaveEstimatePriceRequest.ExtraChargeRequest dto = new SaveEstimatePriceRequest.ExtraChargeRequest();
               dto.setAmount(extra.getAmount());
               dto.setReason(extra.getReason());
               return dto;
             }).toList();
+
     log.info("[기타 추가금 조회] estimateNo = {}, 개수 = {}", estimateNo, extraCharges.size());
 
     log.info("[견적 총합] estimateNo = {}, totalPrice = {}", estimateNo, estimate.getTotalPrice());
 
     return EstimateListDetailResponse.builder()
         .estimateNo(estimate.getEstimateNo())
-        .storeName(estimate.getStoreName())
+        .storeName(store.getName())
         .ownerName(user.getUserName())
         .ownerPhone(user.getPhoneNumber())
         .userId(estimate.getUserId())
@@ -265,39 +271,102 @@ public class GuestEstimateService {
         .build();
   }
 
-  // 견적서 수락/거절
-  public GuestEstimateRespondResult respondToEstimate(Long estimateNo, EstimateStatus status, Long userId) {
+  @Transactional(readOnly = true)
+  public PagedMyEstimates getMyEstimates(Long userId, int page, int size) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    Page<Estimate> pageResult = estimateRepository.findByUserId(userId, pageable);
 
-    log.info("[견적 응답 요청] estimateNo={}, status={}, userId={}", estimateNo, status, userId);
+    List<MyEstimatePreview> previews = pageResult.getContent().stream()
+        .map(e -> {
+          int responseCount = estimateOwnerResponseRepository.countByEstimateNo(e.getEstimateNo());
+          return MyEstimatePreview.builder()
+              .estimateNo(e.getEstimateNo())
+              .moveDate(e.getMoveDate())
+              .fromAddr(e.getFromAddress().getRoadFullAddr())
+              .toAddr(e.getToAddress().getRoadFullAddr())
+              .createdAt(e.getCreatedAt())
+              .responseCount(responseCount)
+              .build();
+        })
+        .toList();
 
-    // 1. 견적서 조회
+    return new PagedMyEstimates(previews, page, size, pageResult.getTotalElements(), pageResult.getTotalPages());
+  }
+
+  @Transactional(readOnly = true)
+  public EstimateResponseList getResponses(Long estimateNo, Long userId) {
+    Estimate estimate = estimateRepository.findById(estimateNo)
+        .orElseThrow(() -> new CustomException(EstimateErrorCode.ESTIMATE_NOT_FOUND));
+
+    if (!estimate.getUserId().equals(userId)) {
+      throw new CustomException(EstimateErrorCode.ESTIMATE_ACCESS_DENIED);
+    }
+
+    List<EstimateOwnerResponse> responses = estimateOwnerResponseRepository.findByEstimateNo(estimateNo);
+
+    List<EstimateResponsePreview> previews = responses.stream()
+        .map(r -> {
+          Long storeId = r.getStoreId();
+          Store store = storeRepository.findById(storeId)
+              .orElse(null);
+
+          EstimateCalculation calc = estimateCalculationRepository
+              .findByEstimateNoAndStoreId(estimateNo, storeId)
+              .orElse(null);
+
+          return EstimateResponsePreview.builder()
+              .storeId(storeId)
+              .storeName(store != null ? store.getName() : "알 수 없음")
+              .truckCount(r.getTruckCount())
+              .ownerMessage(r.getOwnerMessage())
+              .respondedAt(r.getRespondedAt())
+              .itemsTotal(calc != null ? calc.getItemsTotalPrice() : 0)
+              .extraTotal(calc != null ? calc.getExtraChargesTotal() : 0)
+              .finalTotal(calc != null ? calc.getFinalTotalPrice() : 0)
+              .build();
+        })
+        .toList();
+
+    return new EstimateResponseList(estimateNo, previews);
+  }
+
+  // 손님 최종 응답
+  public GuestEstimateRespondResult respondToEstimate(Long estimateNo, Long storeId, EstimateStatus status, Long userId) {
+
     Estimate estimate = estimateRepository.findByEstimateNo(estimateNo)
         .orElseThrow(() -> new CustomException(EstimateErrorCode.ESTIMATE_NOT_FOUND));
 
-    // 2. 사용자 검증
     if (!estimate.getUserId().equals(userId)) {
-      log.warn("[접근 거부] 유저 ID 불일치. 요청 userId={}, 견적 userId={}", userId, estimate.getUserId());
       throw new AccessDeniedException("본인의 견적서만 응답할 수 있습니다.");
     }
 
-    // 3. 상태 처리
-    if (status == EstimateStatus.CONFIRMED) {
-      estimate.setStatus(EstimateStatus.CONFIRMED);
-      estimateRepository.save(estimate);
-      log.info("[견적 수락] estimateNo={} 상태를 CONFIRMED로 변경 완료", estimateNo);
-    } else {
-      estimateRepository.delete(estimate);
-      log.info("[견적 거절] estimateNo={} 삭제 완료", estimateNo);
+    Store store = storeRepository.findById(storeId)
+        .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND));
+
+    // ✅ 모든 EstimateResponse 중에서
+    List<EstimateResponse> allResponses = estimateResponseRepository.findByEstimateNo(estimateNo);
+
+    for (EstimateResponse res : allResponses) {
+      if (res.getStoreId().equals(storeId)) {
+        res.setStatus(EstimateStatus.ACCEPTED);
+      } else {
+        res.setStatus(EstimateStatus.REJECTED);
+      }
+      res.setRespondedAt(LocalDateTime.now());
     }
 
-    // 4. 응답 DTO 반환
-    GuestEstimateRespondResult response = GuestEstimateRespondResult.builder()
-        .estimateNo(estimateNo)
-        .status(status)
-        .build();
+    estimateResponseRepository.saveAll(allResponses);
 
-    log.info("[응답 완료] {}", response);
-    return response;
+    // ✅ Estimate도 상태 변경
+    estimate.setStatus(EstimateStatus.CONFIRMED);
+    estimate.setStoreId(storeId);
+    estimate.setStoreName(store.getName());
+    estimateRepository.save(estimate);
+
+    return GuestEstimateRespondResult.builder()
+        .estimateNo(estimateNo)
+        .status(EstimateStatus.CONFIRMED)
+        .build();
   }
 }
 

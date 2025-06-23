@@ -1,21 +1,24 @@
 package com.zzimple.estimate.guest.controller;
 
-import com.zzimple.estimate.guest.dto.response.EstimateListDetailResponse;
+import com.zzimple.estimate.guest.dto.EstimateResponseList;
+import com.zzimple.estimate.guest.dto.response.PagedMyEstimates;
+import com.zzimple.estimate.owner.dto.request.EstimateRespondRequest;
 import com.zzimple.estimate.guest.dto.response.EstimateListResponse;
 import com.zzimple.estimate.guest.dto.response.GuestEstimateRespondResult;
 import com.zzimple.estimate.guest.dto.response.PagedResponse;
-import com.zzimple.estimate.guest.enums.EstimateStatus;
 import com.zzimple.estimate.guest.service.GuestEstimateService;
 import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.jwt.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,7 +36,7 @@ public class GuestEstimateController {
       summary = "[ 고객 | 토큰 O | 고객이 받은 견적서 조회 ]",
       description = "로그인한 고객이 받은 확정 견적서 목록을 페이징으로 조회합니다."
   )
-  public ResponseEntity<BaseResponse<PagedResponse<EstimateListResponse>>> getMyEstimates(
+  public ResponseEntity<BaseResponse<PagedResponse<EstimateListResponse>>> getMyConfirmEstimates(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size
@@ -42,22 +45,42 @@ public class GuestEstimateController {
     return ResponseEntity.ok(BaseResponse.success(response));
   }
 
-  @PostMapping("/estimates/{estimateNo}/respond")
-  @Operation(
-      summary = "[고객 | 토큰 O 사장님에게 온 견적서 수락/거절]",
-      description = "사장님이 보낸 확정 견적서를 수락 여부를 결정합니다."
-  )
-  public ResponseEntity<BaseResponse<GuestEstimateRespondResult>> respondEstimate(
-      @PathVariable Long estimateNo,
-      @RequestParam EstimateStatus status,
-      @AuthenticationPrincipal CustomUserDetails user
+  @GetMapping("all/list/estimates")
+  public ResponseEntity<BaseResponse<PagedMyEstimates>> getMyEstimates(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size
   ) {
 
+    PagedMyEstimates estimates = guestEstimateService.getMyEstimates(userDetails.getUserId(), page, size);
+    return ResponseEntity.ok(BaseResponse.success(estimates));
+  }
+
+  @GetMapping("/{estimateNo}/responses")
+  public ResponseEntity<BaseResponse<EstimateResponseList>> getResponses(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long estimateNo
+  ) {
+    EstimateResponseList responseList = guestEstimateService.getResponses(estimateNo, userDetails.getUserId());
+    return ResponseEntity.ok(BaseResponse.success(responseList));
+  }
+
+  @PutMapping("/{estimateNo}/respond")
+  public ResponseEntity<BaseResponse<GuestEstimateRespondResult>> respondToEstimate(
+      @PathVariable Long estimateNo,
+      @RequestBody @Valid EstimateRespondRequest request,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    Long userId = userDetails.getUserId(); // 고객 ID
+
     GuestEstimateRespondResult result = guestEstimateService.respondToEstimate(
-        estimateNo, status, user.getUserId()
+        estimateNo,
+        request.getStoreId(),     // ✅ 고객이 선택한 가게
+        request.getStatus(),      // ✅ CONFIRMED or REJECTED
+        userId                    // 고객 본인
     );
 
-    return ResponseEntity.ok(BaseResponse.success("견적서 응답 처리 완료", result));
+    return ResponseEntity.ok(BaseResponse.success(result));
   }
 
 }

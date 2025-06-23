@@ -198,4 +198,5 @@ public interface EstimateRepository extends JpaRepository<Estimate, Long> {
   );
 
   int countByStoreIdAndStatus(Long storeId, EstimateStatus status);
+  Page<Estimate> findByUserId(Long userId, Pageable pageable);
 }

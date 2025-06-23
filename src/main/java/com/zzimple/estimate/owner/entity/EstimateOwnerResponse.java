@@ -1,12 +1,13 @@
 package com.zzimple.estimate.owner.entity;
 
-import com.zzimple.global.common.BaseTimeEntity;
+import com.zzimple.estimate.guest.enums.EstimateStatus;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,14 +20,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(
-    name = "estimate_calculation",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uk_est_calc_est_no_store_id",
-        columnNames = {"estimate_no", "store_id"}
-    )
-)
-public class EstimateCalculation extends BaseTimeEntity {
+public class EstimateOwnerResponse {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,11 +30,9 @@ public class EstimateCalculation extends BaseTimeEntity {
 
   private Long storeId;
 
-  private int truck_charge;
+  private Integer truckCount;
 
-  private int itemsTotalPrice;
+  private String ownerMessage;
 
-  private int extraChargesTotal;
-
-  private int finalTotalPrice;
+  private LocalDateTime respondedAt;
 }

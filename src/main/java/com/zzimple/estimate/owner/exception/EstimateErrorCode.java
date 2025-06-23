@@ -20,7 +20,11 @@ public enum EstimateErrorCode implements BaseErrorCode {
   ESTIMATE_ALREADY_FINALIZED("EST008", "이미 확정된 견적서입니다.", HttpStatus.CONFLICT),
   INVALID_ESTIMATE_ITEMS("EST009", "견적 항목 정보가 잘못되었습니다.", HttpStatus.BAD_REQUEST),
   INVALID_EXTRA_CHARGE("EST010", "추가금 항목이 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
-  ESTIMATE_STORE_MISMATCH("EST011", "사장님 정보가 견적서와 일치하지 않습니다.", HttpStatus.FORBIDDEN);
+  ESTIMATE_STORE_MISMATCH("EST011", "사장님 정보가 견적서와 일치하지 않습니다.", HttpStatus.FORBIDDEN),
+
+  ALREADY_RESPONDED("EST012", "이미 해당 견적서에 응답하였습니다.", HttpStatus.CONFLICT),
+  ESTIMATE_OWNER_RESPONSE_NOT_FOUND("EST013", "해당 사장님의 응답을 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+
 
 
   private final String code;
