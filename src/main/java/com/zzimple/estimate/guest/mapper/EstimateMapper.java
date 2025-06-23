@@ -16,7 +16,7 @@ public class EstimateMapper {
     AddressWithDetailRequest to = draft.getAddress().getToAddress();
 
     AddressDetailInfo fromDetail = from.getDetailInfo().toEntity();
-    AddressDetailInfo toDetail = from.getDetailInfo().toEntity();
+    AddressDetailInfo toDetail = to.getDetailInfo().toEntity();
 
     Address fromAddress = from.getAddress().toEntity();
     Address toAddress = to.getAddress().toEntity();
