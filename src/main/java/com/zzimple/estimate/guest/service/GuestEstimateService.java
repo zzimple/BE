@@ -257,7 +257,7 @@ public class GuestEstimateService {
         .customerMemo(estimate.getCustomerMemo())
         .truckCount(estimate.getTruckCount())
         .truckTotalPrice(setting.getPerTruckCharge() * estimate.getTruckCount())
-        .ownerMessage(estimate.getOwnerMessage())
+        .ownerMessage(estimateOwnerResponse.getOwnerMessage())
         .itemPriceDetails(itemPriceDetails)
         .extraCharges(extraCharges)
         .items(moveItems.stream()
