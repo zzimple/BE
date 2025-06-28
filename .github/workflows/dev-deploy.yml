@@ -63,7 +63,7 @@ jobs:
           
           sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no "$jar_file" $KT_USERNAME@$KT_HOST:/home/$KT_USERNAME/zzimple.jar
   
-          sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_CLOUD_HOST "
+          sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_HOST "
             sudo pgrep java | xargs -r sudo kill -15
             sleep 10
             nohup java -jar /home/$KT_USERNAME/zzimple.jar > app.log 2>&1 &
