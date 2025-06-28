@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.springframework.cglib.core.Local;
 
 @Getter
 @Setter
@@ -25,7 +26,7 @@ public class StaffAssignment extends BaseTimeEntity {
   private Long id;
 
   private Long estimateNo;
-  private String workDate;
+  private LocalDate workDate;
 
   private Long staffId;
   private String staffName;

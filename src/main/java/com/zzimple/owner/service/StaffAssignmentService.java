@@ -11,9 +11,11 @@ import com.zzimple.owner.dto.response.AvailableStaffResponse;
 import com.zzimple.owner.entity.Owner;
 import com.zzimple.owner.exception.OwnerErrorCode;
 import com.zzimple.owner.repository.OwnerRepository;
+import com.zzimple.staff.dto.response.StaffAssignmentResponse;
 import com.zzimple.staff.entity.Staff;
 import com.zzimple.staff.entity.StaffAssignment;
 import com.zzimple.staff.enums.Status;
+import com.zzimple.staff.exception.StaffErrorCode;
 import com.zzimple.staff.repository.StaffAssignmentRepository;
 import com.zzimple.staff.repository.StaffRepository;
 import com.zzimple.staff.repository.StaffTimeOffepository;
@@ -21,6 +23,7 @@ import com.zzimple.user.entity.User;
 import com.zzimple.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -81,9 +84,9 @@ public class StaffAssignmentService {
         .ifPresent(a -> { throw new IllegalStateException("이미 배정된 직원입니다."); });
 
     // 5) 날짜 포맷 변환
-    LocalDate parsed = LocalDate.parse(estimate.getMoveDate(), ESTIMATE_DATE_FORMAT);
-    String workDate = parsed.format(DATE_FORMAT);
-    log.info("[포맷된 작업 날짜] {}", workDate);
+    // 5) LocalDate로 변환 (✔️ workDate 타입이 LocalDate일 경우 바로 사용 가능)
+    LocalDate workDate = LocalDate.parse(estimate.getMoveDate(), ESTIMATE_DATE_FORMAT);
+    log.info("[파싱된 작업 날짜] {}", workDate);
 
     // 6) 엔티티 생성 및 저장
     StaffAssignment assignment = StaffAssignment.builder()
@@ -136,13 +139,12 @@ public class StaffAssignmentService {
     //    StaffAssignment.workDate를 String 그대로 쓰고 있다면
     //    repository에 findByWorkDate(String)로 선언하거나,
     //    workDate.format(DATE_FORMAT) 넘겨도 됩니다.
-    String workDateText = workDate.format(DATE_FORMAT);
     List<Long> busyStaffIds = staffAssignmentRepository
-        .findByWorkDate(workDateText)
+        .findByWorkDate(workDate) // LocalDate 그대로 넘김
         .stream()
         .map(StaffAssignment::getStaffId)
         .toList();
-    log.info("[5] workDateText='{}' 에 이미 배정된 staffId 목록={}", workDateText, busyStaffIds);
+    log.info("[5] workDateText='{}' 에 이미 배정된 staffId 목록={}", workDate, busyStaffIds);
 
     // 5. 최종 배정 가능 직원
     List<Staff> availableStaff = workingStaff.stream()

@@ -20,4 +20,11 @@ public interface StaffTimeOffepository extends JpaRepository<StaffTimeOff, Long>
       LocalDate startDate,
       LocalDate endDate
   );
+
+  List<StaffTimeOff> findByStaffIdAndStatusAndEndDateGreaterThanEqualAndStartDateLessThanEqual(
+      Long staffId,
+      Status status,
+      LocalDate startDate,
+      LocalDate endDate
+  );
 }

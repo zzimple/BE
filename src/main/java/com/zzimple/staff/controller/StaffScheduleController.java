@@ -4,9 +4,11 @@ import com.zzimple.estimate.guest.dto.response.PagedResponse;
 import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.jwt.CustomUserDetails;
 import com.zzimple.staff.dto.request.StaffTimeOffRequest;
+import com.zzimple.staff.dto.response.StaffAssignmentResponse;
+import com.zzimple.staff.dto.response.StaffScheduleCalendarItem;
 import com.zzimple.staff.dto.response.StaffTimeOffResponse;
 import com.zzimple.staff.enums.Status;
-import com.zzimple.staff.service.StaffTimeOffService;
+import com.zzimple.staff.service.StaffScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -28,9 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/staff/time-off")
 @RequiredArgsConstructor
 @Slf4j
-public class StaffTimeOffController {
+public class StaffScheduleController {
 
-  private final StaffTimeOffService staffTimeOffService;
+  private final StaffScheduleService staffScheduleService;
 
   // 휴무 요청하는 api
   @Operation(
@@ -46,7 +48,7 @@ public class StaffTimeOffController {
 
     Long userId = staff.getUserId();
 
-    StaffTimeOffResponse response = staffTimeOffService.apply(userId,request);
+    StaffTimeOffResponse response = staffScheduleService.apply(userId,request);
     return ResponseEntity.ok(
         BaseResponse.success("휴무 신청이 완료되었습니다.", response)
     );
@@ -62,7 +64,7 @@ public class StaffTimeOffController {
       @RequestParam("status") Status status
   ) {
     Long storeId = userDetails.getStoreId();
-    StaffTimeOffResponse response = staffTimeOffService.decide(staffTimeOffId, status, storeId);
+    StaffTimeOffResponse response = staffScheduleService.decide(staffTimeOffId, status, storeId);
     return ResponseEntity.ok(BaseResponse.success("요청 처리 완료", response));
   }
 
@@ -80,8 +82,9 @@ public class StaffTimeOffController {
 
     Long userId = userDetails.getUserId();
 
-    return staffTimeOffService.listMyRequests(userId, page, size);
+    return staffScheduleService.listMyRequests(userId, page, size);
   }
+
 
   @Operation(summary = "[사장 | 토큰 O] 대기중 휴무 요청 조회")
   @GetMapping("/list/pending")
@@ -93,7 +96,7 @@ public class StaffTimeOffController {
     Long userId = user.getUserId();
 
     return ResponseEntity.ok(
-        BaseResponse.success("대기중 휴무 요청 조회", staffTimeOffService.listPendingRequests(userId))
+        BaseResponse.success("대기중 휴무 요청 조회", staffScheduleService.listPendingRequests(userId))
     );
   }
 
@@ -106,7 +109,7 @@ public class StaffTimeOffController {
     Long userId = user.getUserId();
 
     return ResponseEntity.ok(
-        BaseResponse.success("승인된 휴무 요청 조회", staffTimeOffService.listApprovedRequests(userId))
+        BaseResponse.success("승인된 휴무 요청 조회", staffScheduleService.listApprovedRequests(userId))
     );
   }
 
@@ -119,7 +122,17 @@ public class StaffTimeOffController {
     Long userId = user.getUserId();
 
     return ResponseEntity.ok(
-        BaseResponse.success("거절된 휴무 요청 조회", staffTimeOffService.listRejectedRequests(userId))
+        BaseResponse.success("거절된 휴무 요청 조회", staffScheduleService.listRejectedRequests(userId))
     );
+  }
+
+  @GetMapping("/calendar")
+  public ResponseEntity<List<StaffScheduleCalendarItem>> getMyCalendar(
+      @RequestParam String yearMonth,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    List<StaffScheduleCalendarItem> result = staffScheduleService.getMyMonthlyCalendar(
+        userDetails.getUserId(), yearMonth);
+    return ResponseEntity.ok(result);
   }
 }

@@ -5,11 +5,16 @@ import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.guest.service.GuestEstimateService;
 import com.zzimple.estimate.owner.repository.EstimateRepository;
 import com.zzimple.global.dto.BaseResponse;
+import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.jwt.CustomUserDetails;
 import com.zzimple.owner.entity.Owner;
 import com.zzimple.owner.repository.OwnerRepository;
 import com.zzimple.owner.store.entity.Store;
 import com.zzimple.owner.store.repository.StoreRepository;
+import com.zzimple.staff.entity.Staff;
+import com.zzimple.staff.exception.StaffErrorCode;
+import com.zzimple.staff.repository.StaffAssignmentRepository;
+import com.zzimple.staff.repository.StaffRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +36,8 @@ public class EstimateController {
   private final OwnerRepository ownerRepository;
   private final StoreRepository storeRepository;
   private final EstimateRepository estimateRepository;
+  private final StaffRepository staffRepository;
+  private final StaffAssignmentRepository staffAssignmentRepository;
 
 //  @GetMapping("/estimate/{estimateNo}")
 //  @Operation(
@@ -46,7 +53,7 @@ public class EstimateController {
 //  }
 
     @GetMapping("/stores/{storeId}/estimates/{estimateNo}")
-    @PreAuthorize("hasAnyRole('CUSTOMER','OWNER')")
+//    @PreAuthorize("hasAnyRole('CUSTOMER','OWNER')")
     public ResponseEntity<BaseResponse<EstimateListDetailResponse>> getDetail(
         @PathVariable Long storeId,
         @PathVariable Long estimateNo,
@@ -55,19 +62,37 @@ public class EstimateController {
       boolean isOwner = user.getAuthorities().stream()
           .anyMatch(a -> a.getAuthority().equals("ROLE_OWNER"));
 
+      boolean isStaff = user.getAuthorities().stream()
+          .anyMatch(a -> a.getAuthority().equals("ROLE_STAFF"));
+
       if (isOwner) {
-        // 사장님 권한: 이 매장이 내 매장인지 확인
+        // 사장님 권한 확인
         Store store = storeRepository.findByOwnerUserId(user.getUserId())
             .orElseThrow(() -> new EntityNotFoundException("Store not found"));
-
-        if (store.getId() == null || !store.getId().equals(storeId)) {
+        if (!store.getId().equals(storeId)) {
           throw new AccessDeniedException("매장 접근 권한이 없습니다.");
         }
 
+      } else if (isStaff) {
+        // 직원 권한 확인
+        Staff staff = staffRepository.findByUserId(user.getUserId())
+            .orElseThrow(() -> new CustomException(StaffErrorCode.INVALID_STAFF_ROLE));
 
+        if (!staff.getStoreId().equals(storeId)) {
+          throw new AccessDeniedException("직원: 소속 매장이 아닙니다.");
+        }
+
+        // 해당 견적서에 배정된 사람인지 확인 (선택사항)
+        boolean assigned = staffAssignmentRepository
+            .findByEstimateNoAndStaffId(estimateNo, staff.getStaffId())
+            .isPresent();
+
+        if (!assigned) {
+          throw new AccessDeniedException("이 견적에 배정되지 않았습니다.");
+        }
 
       } else {
-        // 고객 권한: 이 견적이 내 견적인지 확인
+        // 고객 권한 확인
         Estimate est = estimateRepository.findByEstimateNo(estimateNo)
             .orElseThrow(() -> new EntityNotFoundException("Estimate not found"));
         if (!est.getUserId().equals(user.getUserId())) {

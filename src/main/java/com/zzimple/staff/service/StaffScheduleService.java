@@ -1,20 +1,29 @@
 package com.zzimple.staff.service;
 
 import com.zzimple.estimate.guest.dto.response.PagedResponse;
+import com.zzimple.estimate.guest.entity.Estimate;
+import com.zzimple.estimate.owner.repository.EstimateRepository;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.owner.store.entity.Store;
 import com.zzimple.owner.store.repository.StoreRepository;
 import com.zzimple.staff.dto.request.StaffTimeOffRequest;
+import com.zzimple.staff.dto.response.StaffAssignmentResponse;
+import com.zzimple.staff.dto.response.StaffScheduleCalendarItem;
 import com.zzimple.staff.dto.response.StaffTimeOffResponse;
 import com.zzimple.staff.entity.Staff;
+import com.zzimple.staff.entity.StaffAssignment;
 import com.zzimple.staff.entity.StaffTimeOff;
 import com.zzimple.staff.enums.Status;
 import com.zzimple.staff.exception.StaffErrorCode;
+import com.zzimple.staff.repository.StaffAssignmentRepository;
 import com.zzimple.staff.repository.StaffRepository;
 import com.zzimple.staff.repository.StaffTimeOffepository;
 import com.zzimple.user.entity.User;
 import com.zzimple.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -30,11 +39,14 @@ import org.springframework.data.domain.PageRequest;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class StaffTimeOffService {
+public class StaffScheduleService {
+
   private final StaffTimeOffepository staffTimeOffepository;
   private final StaffRepository staffRepository;
   private final StoreRepository storeRepository;
   private final UserRepository userRepository;
+  private final StaffAssignmentRepository staffAssignmentRepository;
+  private final EstimateRepository estimateRepository;
 
   // 1) 직원 휴무 신청
   public StaffTimeOffResponse apply(Long userId, StaffTimeOffRequest request) {
@@ -96,7 +108,7 @@ public class StaffTimeOffService {
         .build();
   }
 
-  // 사장님 승인/거절
+  // 2) 사장님 승인/거절
   @Transactional
   public StaffTimeOffResponse decide(Long staffId, Status status, Long storeId) {
 
@@ -110,7 +122,8 @@ public class StaffTimeOffService {
 
     if (status == Status.APPROVED) {
       reqeust_staffId.setStatus(Status.APPROVED);
-      log.info("[휴무 승인] requestId={}, staffId={} added to calendar", reqeust_staffId, reqeust_staffId.getStaffName());
+      log.info("[휴무 승인] requestId={}, staffId={} added to calendar", reqeust_staffId,
+          reqeust_staffId.getStaffName());
     } else {
       reqeust_staffId.setStatus(Status.REJECTED);
       log.info("[휴무 반려] requestId={}, staffId={}", reqeust_staffId, reqeust_staffId.getStaffName());
@@ -179,4 +192,71 @@ public class StaffTimeOffService {
     return listByStoreAndStatus(userId, Status.REJECTED);
   }
 
+  public List<StaffScheduleCalendarItem> getMyMonthlyCalendar(Long userId, String yearMonthStr) {
+    Staff staff = staffRepository.findByUserId(userId)
+        .orElseThrow(() -> new CustomException(StaffErrorCode.INVALID_STAFF_ROLE));
+
+    Long staffId = staff.getStaffId();
+    Long storeId = staff.getStoreId();
+
+    YearMonth yearMonth = YearMonth.parse(yearMonthStr, DateTimeFormatter.ofPattern("yyyy-MM"));
+    LocalDate start = yearMonth.atDay(1);
+    LocalDate end = yearMonth.atEndOfMonth();
+
+    // 1. 근무 일정 조회
+    List<StaffAssignment> assignments = staffAssignmentRepository
+        .findAllByStaffIdAndWorkDateBetween(staffId, start, end);
+
+    // 2. 휴무 일정 조회
+    List<StaffTimeOff> timeOffs = staffTimeOffepository
+        .findByStaffIdAndStatusAndEndDateGreaterThanEqualAndStartDateLessThanEqual(
+            staffId, Status.APPROVED, start, end
+        );
+
+    // 3. 근무 일정 변환
+    List<StaffScheduleCalendarItem> workItems = assignments.stream()
+        .map(a -> {
+          Estimate estimate = estimateRepository.findByEstimateNo(a.getEstimateNo())
+              .orElseThrow(() -> new EntityNotFoundException("Estimate not found"));
+
+          return StaffScheduleCalendarItem.builder()
+              .date(a.getWorkDate())
+              .type("WORK")
+              .work(StaffScheduleCalendarItem.WorkInfo.builder()
+                  .estimateNo(a.getEstimateNo())
+                  .storeId(storeId)
+                  .staffName(a.getStaffName())
+                  .fromAddress(estimate.getFromAddress().getRoadFullAddr())
+                  .toAddress(estimate.getToAddress().getRoadFullAddr())
+                  .build())
+              .build();
+        })
+        .toList();
+
+
+    // 4. 휴무 일정 변환 (start ~ end 범위 내 날짜별로 쪼개기)
+    List<StaffScheduleCalendarItem> timeOffItems = timeOffs.stream()
+        .flatMap(to -> {
+          LocalDate from = to.getStartDate().isBefore(start) ? start : to.getStartDate();
+          LocalDate toDate = to.getEndDate().isAfter(end) ? end : to.getEndDate();
+          return from.datesUntil(toDate.plusDays(1)).map(date ->
+              StaffScheduleCalendarItem.builder()
+                  .date(date)
+                  .type("TIME_OFF")
+                  .timeOff(StaffScheduleCalendarItem.TimeOffInfo.builder()
+                      .type(to.getType())
+                      .reason(to.getReason())
+                      .build())
+                  .build()
+          );
+        })
+        .toList();
+
+    // 5. 병합 후 날짜 기준 정렬
+    return new java.util.ArrayList<StaffScheduleCalendarItem>() {{
+      addAll(workItems);
+      addAll(timeOffItems);
+      sort(java.util.Comparator.comparing(StaffScheduleCalendarItem::getDate));
+    }};
+  }
 }
