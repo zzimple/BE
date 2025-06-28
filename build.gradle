@@ -68,6 +68,10 @@ dependencies {
 
 	implementation 'com.google.protobuf:protobuf-java:3.25.3'
 
+	implementation 'io.netty:netty-all:4.1.109.Final' // 또는 호환 가능한 최신 버전
+	implementation 'org.apache.tomcat.embed:tomcat-embed-core:10.1.41'
+
+
 }
 
 tasks.named('test') {
