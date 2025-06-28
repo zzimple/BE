@@ -29,6 +29,8 @@ public class EstimateConfirmedResponse {
 
   private String guestName;
 
+  private Long storeId;
+
   public static EstimateConfirmedResponse from(Estimate estimate, String guestName) {
 
     return EstimateConfirmedResponse.builder()
@@ -39,6 +41,7 @@ public class EstimateConfirmedResponse {
         .moveType(estimate.getMoveType() != null ? estimate.getMoveType().name() : null)
         .optionType(estimate.getOptionType() != null ? estimate.getOptionType().name() : null)
         .guestName(guestName)
+        .storeId(estimate.getStoreId())
         .build();
   }
 }
