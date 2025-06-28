@@ -4,8 +4,6 @@ on:
   push:
     branches: [develop]
     
-  workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +21,7 @@ jobs:
         run: |
           cd ./src/main/resources
           echo "${{ secrets.APPLICATION_DEV_PROPERTIES }}" > ./application-dev.properties
+          cat application-dev.properties
         shell: bash
 
       - name: Grant execute permission for gradlew
@@ -44,29 +43,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install sshpass (ID/비밀번호 SSH를 위해)
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: zzimple
           path: build/libs/
-
-      # ── 여기에 JAR 업로드 스텝 추가 ──
-      - name: Copy JAR to remote server
-        env:
-          KT_USERNAME: ${{ secrets.KT_USERNAME }}
-          KT_PASSWORD: ${{ secrets.KT_PASSWORD }}
-          KT_HOST: ${{ secrets.KT_HOST }}
-        run: |
-          # ✅ plain.jar 제외한 fat jar 자동 선택
-          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
-
-          echo "Uploading JAR: $jar_file"  # 로그 확인용 출력
-          
-          sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no "$jar_file" \
-            $KT_USERNAME@$KT_HOST:~/zzimple-0.0.1-SNAPSHOT.jar  # 서버에 고정 이름으로 복사
 
       - name: Deploy to KT Cloud (ID/비밀번호 방식)
         env:
@@ -74,21 +55,16 @@ jobs:
           KT_PASSWORD: ${{ secrets.KT_PASSWORD }}
           KT_HOST: ${{ secrets.KT_HOST }}
         run: |
-          echo "📦 Uploading zzimple-0.0.1-SNAPSHOT.jar to KT Cloud..."
-
-          # ⬇️ 서버에서 해당 이름으로 실행되도록 수정
-          sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_HOST << 'EOF'
-            echo '🛑 Stopping existing zzimple process...'
+          
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+          
+          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
+          
+          sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no "$jar_file" $KT_USERNAME@$KT_HOST:/home/$KT_USERNAME/zzimple.jar
+  
+          sshpass -p "$KT_PASSWORD" ssh -o StrictHostKeyChecking=no $KT_USERNAME@$KT_CLOUD_HOST "
             sudo pgrep java | xargs -r sudo kill -15
             sleep 10
-
-            echo '🚀 Starting new zzimple-0.0.1-SNAPSHOT.jar...'
-            nohup java -jar zzimple-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev > app.log 2>&1 &
-
-            sleep 5
-            echo '📡 Checking running process...'
-            ps aux | grep zzimple-0.0.1-SNAPSHOT.jar | grep -v grep
-
-            echo '📄 Showing last lines of app.log...'
-            tail -n 20 app.log
-          EOF
+            nohup java -jar /home/$KT_USERNAME/zzimple.jar > app.log 2>&1 &
+          "
