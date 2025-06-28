@@ -60,9 +60,13 @@ jobs:
           KT_PASSWORD: ${{ secrets.KT_PASSWORD }}
           KT_HOST: ${{ secrets.KT_HOST }}
         run: |
-          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)  # ✅ plain 제외
+          # ✅ plain.jar 제외한 fat jar 자동 선택
+          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
+
+          echo "Uploading JAR: $jar_file"  # 로그 확인용 출력
+          
           sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no "$jar_file" \
-            $KT_USERNAME@$KT_HOST:~/zzimple-0.0.1-SNAPSHOT.jar  # ✅ 서버에 고정 이름으로 복사
+            $KT_USERNAME@$KT_HOST:~/zzimple-0.0.1-SNAPSHOT.jar  # 서버에 고정 이름으로 복사
 
       - name: Deploy to KT Cloud (ID/비밀번호 방식)
         env:
