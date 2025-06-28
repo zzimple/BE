@@ -10,13 +10,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface StaffAssignmentRepository extends JpaRepository<StaffAssignment, Long> {
   Optional<StaffAssignment> findByEstimateNoAndStaffId(Long estimateNo, Long staffId);
 
-  // 🔽 LocalDate 타입으로 수정
   List<StaffAssignment> findByWorkDate(LocalDate workDate);
 
-  // 🔽 LocalDate 범위 검색으로 수정
   List<StaffAssignment> findAllByStaffIdAndWorkDateBetween(
       Long staffId, LocalDate startDate, LocalDate endDate
   );
+
+  List<StaffAssignment> findByEstimateNo(Long estimateNo);
 
 }
 
