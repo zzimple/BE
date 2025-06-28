@@ -166,7 +166,7 @@ public class VisionController {
 
 
 
-  // ✅ 마이페이지 - 감지된 짐 목록 조회
+  // 마이페이지 - 감지된 짐 목록 조회
   @GetMapping
   public ResponseEntity<BaseResponse<List<ItemType>>> getPreferredItems(
       @AuthenticationPrincipal CustomUserDetails user
