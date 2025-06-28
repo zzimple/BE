@@ -30,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -138,7 +139,7 @@ public class EstimateDraftController {
       summary = "[고객 | 토큰 O | 견적서 - 짐 항목 일괄 저장]",
       description = "전체 박스 개수와 모든 짐 항목 리스트를 받아 Redis에 덮어씁니다."
   )
-  @PutMapping(value = "/move-items", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PatchMapping(value = "/move-items", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<BaseResponse<MoveItemsDraftResponse>> saveAllMoveItems(
       @RequestParam UUID draftId,
       @RequestBody MoveItemsBatchRequest batchRequest
