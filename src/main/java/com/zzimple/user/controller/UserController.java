@@ -9,6 +9,7 @@ import com.zzimple.user.dto.request.LoginRequest;
 import com.zzimple.user.dto.request.UserSignUpRequest;
 import com.zzimple.user.dto.response.LoginIdCheckResponse;
 import com.zzimple.user.dto.response.LoginResponse;
+import com.zzimple.user.dto.response.ProfileResponse;
 import com.zzimple.user.dto.response.SignUpResponse;
 import com.zzimple.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -114,5 +116,11 @@ public class UserController {
 
     userService.updateEmail(userId, request.getEmail());
     return ResponseEntity.ok(BaseResponse.success("이메일이 변경되었습니다."));
+  }
+
+  @GetMapping("/profile")
+  public ProfileResponse profile(@AuthenticationPrincipal CustomUserDetails user) {
+    Long userId = user.getUserId();
+    return userService.getProfile(userId);
   }
 }

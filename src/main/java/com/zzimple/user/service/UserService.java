@@ -7,6 +7,7 @@ import com.zzimple.owner.exception.OwnerErrorCode;
 import com.zzimple.owner.repository.OwnerRepository;
 import com.zzimple.owner.store.entity.Store;
 import com.zzimple.owner.store.repository.StoreRepository;
+import com.zzimple.user.dto.response.ProfileResponse;
 import com.zzimple.user.enums.UserRole;
 import com.zzimple.user.exception.UserErrorCode;
 import com.zzimple.global.jwt.JwtUtil;
@@ -211,5 +212,19 @@ public class UserService {
     }
 
     user.updateEmail(email);
+  }
+
+  @Transactional(readOnly = true)
+  public ProfileResponse getProfile(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    return new ProfileResponse(
+        user.getId(),
+        user.getUserName(),
+        user.getPhoneNumber(),
+        user.getEmail(),
+        user.getLoginId()
+    );
   }
 }

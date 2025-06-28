@@ -29,15 +29,18 @@ public class StorePriceSettingService {
 
   @Transactional(readOnly = true)
   public StorePriceSettingResponse getPriceSetting(Long storeId) {
-    StorePriceSetting setting = storePriceSettingRepository.findByStoreId(storeId)
-        .orElseThrow(() -> new IllegalArgumentException("해당 가게의 단가 설정이 없습니다."));
-
-    return StorePriceSettingResponse.builder()
-        .perTruckCharge(setting.getPerTruckCharge())
-        .holidayCharge(setting.getHolidayCharge())
-        .goodDayCharge(setting.getGoodDayCharge())
-        .weekendCharge(setting.getWeekendCharge())
-        .build();
+    return storePriceSettingRepository.findByStoreId(storeId)
+        .map(setting -> StorePriceSettingResponse.builder()
+            .perTruckCharge(setting.getPerTruckCharge())
+            .holidayCharge(setting.getHolidayCharge())
+            .goodDayCharge(setting.getGoodDayCharge())
+            .weekendCharge(setting.getWeekendCharge())
+            .build())
+        .orElseGet(() -> StorePriceSettingResponse.builder()
+            .perTruckCharge(0)
+            .holidayCharge(0)
+            .goodDayCharge(0)
+            .weekendCharge(0)
+            .build());
   }
-
 }

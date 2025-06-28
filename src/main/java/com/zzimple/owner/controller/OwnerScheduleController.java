@@ -4,11 +4,15 @@ import com.zzimple.global.dto.BaseResponse;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.global.jwt.CustomUserDetails;
 import com.zzimple.owner.dto.response.AssignStaffDateResponse;
+import com.zzimple.owner.dto.response.AssignedStaffListResponse;
 import com.zzimple.owner.dto.response.AvailableStaffResponse;
 import com.zzimple.owner.entity.Owner;
 import com.zzimple.owner.exception.OwnerErrorCode;
 import com.zzimple.owner.repository.OwnerRepository;
 import com.zzimple.owner.service.StaffAssignmentService;
+import com.zzimple.user.entity.User;
+import com.zzimple.user.exception.UserErrorCode;
+import com.zzimple.user.repository.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,22 +31,20 @@ public class OwnerScheduleController {
 
   private final StaffAssignmentService staffAssignmentService;
   private final OwnerRepository ownerRepository;
+  private final UserRepository userRepository;
 
   @PostMapping("/{estimateNo}/assign")
-  public ResponseEntity<BaseResponse<AssignStaffDateResponse>> assign(
+  public ResponseEntity<BaseResponse<List<AssignStaffDateResponse>>> assign(
       @PathVariable Long estimateNo,
-      @RequestParam Long staffId,
-      @AuthenticationPrincipal CustomUserDetails userDetails
+      @RequestParam List<Long> staffIds
   ) {
-    // 1) 로그인된 사장의 User ID로 Owner Entity 조회
-    Owner owner = ownerRepository.findByUserId(userDetails.getUserId())
-        .orElseThrow(() -> new CustomException(OwnerErrorCode.OWNER_NOT_FOUND));
-    Long ownerId = owner.getId();
+    // 2) 서비스 호출 (한 명 혹은 여러 명)
+    List<AssignStaffDateResponse> respList =
+        staffAssignmentService.assignWithDate(estimateNo, staffIds);
 
-    // 3) 서비스 호출
-    AssignStaffDateResponse resp =
-        staffAssignmentService.assignWithDate(estimateNo, staffId);
-    return ResponseEntity.ok(BaseResponse.success("직원 스케줄 배정에 성공했습니다", resp));
+    return ResponseEntity.ok(
+        BaseResponse.success("직원 스케줄 배정에 성공했습니다", respList)
+    );
   }
 
   @GetMapping("/{estimateNo}/available-staff")
@@ -57,4 +59,22 @@ public class OwnerScheduleController {
     return ResponseEntity.ok(BaseResponse.success("사용 가능한 직원 목록입니다.", staffList));
   }
 
+  // 새로 추가
+  @GetMapping("/{estimateNo}/assigned-staff")
+  public ResponseEntity<BaseResponse<AssignedStaffListResponse>> getAssignedStaff(
+      @PathVariable Long estimateNo,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    User user = userRepository.findById(userDetails.getUserId())
+        .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+
+    Long userId = user.getId();
+
+    // 2) 서비스 호출
+    AssignedStaffListResponse response =
+        staffAssignmentService.getAssignedStaffList(estimateNo, userId);
+
+    // 3) 결과 반환
+    return ResponseEntity.ok(BaseResponse.success("배정된 직원 목록입니다.", response));
+  }
 }
