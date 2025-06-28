@@ -30,7 +30,7 @@ jobs:
       - name: Build with Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: build --stacktrace --info
+          arguments: bootJar --stacktrace --info
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
