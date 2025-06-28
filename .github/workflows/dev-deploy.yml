@@ -53,16 +53,16 @@ jobs:
           name: zzimple
           path: build/libs/
 
-       # ── 여기에 JAR 업로드 스텝 추가 ──
+      # ── 여기에 JAR 업로드 스텝 추가 ──
       - name: Copy JAR to remote server
         env:
           KT_USERNAME: ${{ secrets.KT_USERNAME }}
           KT_PASSWORD: ${{ secrets.KT_PASSWORD }}
           KT_HOST: ${{ secrets.KT_HOST }}
         run: |
-          sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no \
-            build/libs/zzimple-0.0.1-SNAPSHOT.jar \
-            $KT_USERNAME@$KT_HOST:~/zzimple-0.0.1-SNAPSHOT.jar
+          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)  # ✅ plain 제외
+          sshpass -p "$KT_PASSWORD" scp -o StrictHostKeyChecking=no "$jar_file" \
+            $KT_USERNAME@$KT_HOST:~/zzimple-0.0.1-SNAPSHOT.jar  # ✅ 서버에 고정 이름으로 복사
 
       - name: Deploy to KT Cloud (ID/비밀번호 방식)
         env:
