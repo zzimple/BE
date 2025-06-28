@@ -5,14 +5,10 @@ import com.zzimple.estimate.guest.dto.MyEstimatePreview;
 import com.zzimple.estimate.guest.dto.response.EstimateResponsePreview;
 import com.zzimple.estimate.guest.dto.response.PagedMyEstimates;
 import com.zzimple.estimate.owner.entity.EstimateOwnerResponse;
-import com.zzimple.estimate.owner.entity.EstimateResponse;
-import com.zzimple.estimate.owner.entity.MoveItemPriceByStore;
 import com.zzimple.estimate.owner.repository.EstimateOwnerResponseRepository;
 import com.zzimple.estimate.owner.repository.EstimateResponseRepository;
 import com.zzimple.estimate.owner.exception.EstimateErrorCode;
-import com.zzimple.estimate.owner.repository.MoveItemPriceByStoreRepository;
 import com.zzimple.global.exception.CustomException;
-import com.zzimple.owner.store.exception.StoreErrorCode;
 import org.springframework.security.access.AccessDeniedException;
 import com.zzimple.estimate.guest.dto.response.EstimateListDetailResponse;
 import com.zzimple.estimate.guest.dto.response.EstimateListResponse;
@@ -129,20 +125,6 @@ public class GuestEstimateService {
         .totalPages(mappedPage.getTotalPages())
         .last(mappedPage.isLast())
         .build();
-  }
-
-  private String formatMoveDate(String moveDateInt) {
-    LocalDate date = LocalDate.parse(String.valueOf(moveDateInt), DateTimeFormatter.BASIC_ISO_DATE);
-    String dayOfWeekKor = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN);
-    return date.getMonthValue() + "/" + date.getDayOfMonth() + " (" + dayOfWeekKor + ")";
-  }
-
-  private String formatMoveTime(LocalDateTime scheduledAt) {
-    int hour = scheduledAt.getHour();
-    int minute = scheduledAt.getMinute();
-    String ampm = hour < 12 ? "오전" : "오후";
-    int displayHour = hour % 12 == 0 ? 12 : hour % 12;
-    return ampm + " " + displayHour + ":" + String.format("%02d", minute);
   }
 
   // 최종 견적서 상세보기
