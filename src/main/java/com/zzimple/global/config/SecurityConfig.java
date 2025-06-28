@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -79,7 +80,7 @@ public class SecurityConfig {
 
 
                 // 직원 전용 API
-                .requestMatchers("/staff/request", "/staff/time-off/request", "/staff/time-off/me", "/staff/profile").hasRole("STAFF")
+                .requestMatchers("/staff/request", "/staff/time-off/request", "/staff/time-off/me", "/staff/profile", "staff/time-off/me/calendar", "staff/time-off/calendar").hasRole("STAFF")
 
                 // 사장 전용 API
                 .requestMatchers("/staff/approve","/staff/list", "/estimates/owner/**", "/staff/time-off/pending", "/staff/time-off/decide/**", "/owner/schedule/**" ,"/staff/time-off/list/**").hasRole("OWNER")
@@ -87,7 +88,9 @@ public class SecurityConfig {
                 // 고객 전용 API
                 .requestMatchers("/estimates/draft/**", "/guest/my/**").hasRole("GUEST")
 
-                .requestMatchers("/view/**").hasAnyRole("OWNER", "GUEST")
+                .requestMatchers("/view/**").hasAnyRole("OWNER", "GUEST", "STAFF")
+
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // 그 외 요청 차단
                 .anyRequest().denyAll()
