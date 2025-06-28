@@ -17,9 +17,7 @@ public class PreferredItemService {
   private final ItemTypeRepository itemTypeRepository;
   private final UserPreferredItemRepository preferredItemRepository;
 
-  /**
-   * Vision API 결과로 감지된 항목들을 사용자 선호 목록으로 저장합니다.
-   */
+  //Vision API 결과로 감지된 항목들을 사용자 선호 목록으로 저장합니다.
   @Transactional
   public void saveDetectedItems(Long userId, List<String> itemNames) {
     List<ItemType> items = itemTypeRepository.findByItemTypeNameIn(itemNames);
@@ -31,6 +29,7 @@ public class PreferredItemService {
     }
   }
 
+  // 물품 목록 가져오기
   @Transactional(readOnly = true)
   public List<ItemType> getPreferredItems(Long userId) {
     List<UserPreferredItem> records = preferredItemRepository.findAllByUserId(userId);
