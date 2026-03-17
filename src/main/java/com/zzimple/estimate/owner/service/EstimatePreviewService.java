@@ -1,13 +1,13 @@
 package com.zzimple.estimate.owner.service;
 
-import com.zzimple.estimate.owner.entity.EstimateResponse;
 import com.zzimple.estimate.guest.enums.EstimateStatus;
-import com.zzimple.estimate.owner.repository.EstimateResponseRepository;
+import com.zzimple.estimate.owner.entity.EstimateOwnerResponse;
 import com.zzimple.estimate.owner.dto.response.EstimatePreviewResponse;
 import com.zzimple.estimate.guest.entity.Estimate;
 import com.zzimple.estimate.guest.enums.MoveOptionType;
 import com.zzimple.estimate.guest.enums.MoveType;
 import com.zzimple.estimate.owner.exception.EstimateErrorCode;
+import com.zzimple.estimate.owner.repository.EstimateOwnerResponseRepository;
 import com.zzimple.estimate.owner.repository.EstimateRepository;
 import com.zzimple.global.exception.CustomException;
 import com.zzimple.owner.store.entity.Store;
@@ -38,7 +38,7 @@ public class EstimatePreviewService {
   private final EstimateRepository estimateRepository;
   private final StoreRepository storeRepository;
   private final UserRepository userRepository;
-  private final EstimateResponseRepository estimateResponseRepository;
+  private final EstimateOwnerResponseRepository estimateOwnerResponseRepository;
 
   // 공개 견적서 페이징
   public Page<EstimatePreviewResponse> getEstimatePreview(
@@ -270,9 +270,9 @@ public class EstimatePreviewService {
         .orElseThrow(() -> new CustomException(StoreErrorCode.STORE_NOT_FOUND))
         .getId();
 
-    List<Long> respondedEstimateNos = estimateResponseRepository.findAllByStoreId(store.getId())
+    List<Long> respondedEstimateNos = estimateOwnerResponseRepository.findAllByStoreId(store.getId())
         .stream()
-        .map(EstimateResponse::getEstimateNo)
+        .map(EstimateOwnerResponse::getEstimateNo)
         .toList();
 
     List<EstimatePreviewResponse> waitingList = waiting.getContent().stream()

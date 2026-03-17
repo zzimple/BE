@@ -21,8 +21,13 @@ import com.zzimple.user.dto.response.SignUpResponse;
 import com.zzimple.user.entity.User;
 import com.zzimple.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -36,6 +41,8 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+  private static final HexFormat HEX_FORMAT = HexFormat.of();
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
@@ -116,7 +123,7 @@ public class UserService {
           .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
       // 2. 비밀번호 확인
-      if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+      if (!isPasswordValid(request.getPassword(), user)) {
         throw new CustomException(UserErrorCode.INVALID_PASSWORD);
       }
 
@@ -189,7 +196,7 @@ public class UserService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
-    if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+    if (!isPasswordValid(currentPassword, user)) {
       throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
     }
 
@@ -226,5 +233,65 @@ public class UserService {
         user.getEmail(),
         user.getLoginId()
     );
+  }
+
+  private boolean isPasswordValid(String rawPassword, User user) {
+    String storedPassword = user.getPassword();
+
+    if (!StringUtils.hasText(storedPassword)) {
+      return false;
+    }
+
+    if (isBcryptHash(storedPassword)) {
+      return passwordEncoder.matches(rawPassword, storedPassword);
+    }
+
+    if (isSha256Hex(storedPassword) && sha256(rawPassword).equalsIgnoreCase(storedPassword)) {
+      user.updatePassword(passwordEncoder.encode(rawPassword));
+      userRepository.save(user);
+      log.info("[비밀번호 마이그레이션] ID: {} 계정 비밀번호를 SHA-256에서 BCrypt로 전환했습니다.", user.getLoginId());
+      return true;
+    }
+
+    if (storedPassword.equals(rawPassword)) {
+      user.updatePassword(passwordEncoder.encode(rawPassword));
+      userRepository.save(user);
+      log.warn("[비밀번호 마이그레이션] ID: {} 계정 비밀번호를 평문에서 BCrypt로 전환했습니다.", user.getLoginId());
+      return true;
+    }
+
+    return false;
+  }
+
+  private boolean isBcryptHash(String password) {
+    return password.startsWith("$2a$")
+        || password.startsWith("$2b$")
+        || password.startsWith("$2y$");
+  }
+
+  private boolean isSha256Hex(String password) {
+    if (password.length() != 64) {
+      return false;
+    }
+
+    String normalizedPassword = password.toLowerCase(Locale.ROOT);
+    for (int i = 0; i < normalizedPassword.length(); i++) {
+      char ch = normalizedPassword.charAt(i);
+      boolean isHexChar = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
+      if (!isHexChar) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private String sha256(String rawPassword) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hashedBytes = digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8));
+      return HEX_FORMAT.formatHex(hashedBytes);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 algorithm is not available", e);
+    }
   }
 }
