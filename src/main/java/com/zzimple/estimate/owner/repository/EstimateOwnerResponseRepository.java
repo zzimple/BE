@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EstimateOwnerResponseRepository extends JpaRepository<EstimateOwnerResponse, Long> {
   Optional<EstimateOwnerResponse> findByEstimateNoAndStoreId(Long estimateNo, Long storeId);
+  List<EstimateOwnerResponse> findAllByStoreId(Long storeId);
   List<EstimateOwnerResponse> findByEstimateNo(Long estimateNo);
   int countByEstimateNo(Long estimateNo);
   Optional<EstimateOwnerResponse>
